@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:18
+    container_name: postgres_database
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: de_bonusbazen
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+
+volumes:
+  database_data:

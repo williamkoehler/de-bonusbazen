@@ -1,0 +1,53 @@
+<div class="container">
+  <h1>Register*</h1>
+  <p>*Why didn't register sooner?</p>
+  <div class="form">
+    <div class="group">
+      <div class="field">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          [(ngModel)]="name"
+          type="text"
+          placeholder="Enter your username..."
+        />
+      </div>
+
+      <div class="field">
+        <label for="username">Nickname</label>
+        <input
+          id="username"
+          [(ngModel)]="nickname"
+          type="text"
+          placeholder="Enter your real or nickname..."
+        />
+      </div>
+
+      <div class="field">
+        <label for="email">E-Mail</label>
+        <input
+          id="email"
+          [(ngModel)]="email"
+          type="text"
+          placeholder="Enter your e-mail address..."
+        />
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          [(ngModel)]="password"
+          type="password"
+          placeholder="Enter a super safe password..."
+        />
+      </div>
+    </div>
+
+    <div class="action">
+      <button class="primary" (click)="onRegisterClick()">Register</button>
+    </div>
+  </div>
+</div>

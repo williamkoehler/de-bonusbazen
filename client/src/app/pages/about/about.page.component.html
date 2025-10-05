@@ -1,0 +1,30 @@
+<div class="container">
+  <div class="logo">
+    <img src="assets/logo.jpg" alt="De BonusBazen Logo" />
+  </div>
+  <div class="message">
+    Hi there! <br />
+    <br />
+    We are De BonusBazen, a Gewis FYC. <br />
+    <br />
+    Feel free to reach out to us for any questions or just to say hi!
+  </div>
+  <div class="members">
+    @for(member of members; track member) {
+    <div class="member">
+      @if (member.hasProfilePicture) {
+      <img
+        class="image"
+        [src]="'api/users/' + member.id + '/profile_picture'"
+      />
+      } @else {
+      <img class="image" src="assets/user-icon.svg" />
+      }
+      <div class="info">
+        <div class="name">{{ member.nickname ?? member.name }}</div>
+        <!-- <div class="role">{{ member.nickname }}</div> -->
+      </div>
+    </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,15 @@
+<div class="container">
+  <h1>De BonusBazen Blog*</h1>
+  <p>*The best place to get news from De BonusBazen FYC.</p>
+  <div class="posts">
+    @for(post of posts; track post) {
+    <div class="post">
+      <div class="title">{{ post.title }}</div>
+      <div class="date unselectable">
+        created on {{ formatDate(post.createdAt) }}
+      </div>
+      <div class="body">{{ post.body }}</div>
+    </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,15 @@
+@import "variables";
+
+.container {
+    width: 100vw;
+    height: 100vh;
+
+    .body {
+        height: calc(100vh - $nav-bar-height);
+        padding: 0 100px;
+
+        overflow-y: auto;
+    }
+
+    background-color: $background-color;
+}

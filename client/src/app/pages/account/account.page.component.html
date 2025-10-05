@@ -1,0 +1,26 @@
+<div class="container">
+  <h1>Your Account*</h1>
+  <p>*The best place to check and change your BonusBazen settings.</p>
+  <div class="content">
+    <div class="info">
+      <div class="left">
+        @if (hasProfilePicture) {
+        <img class="image" [src]="'api/users/' + id + '/profile_picture'" />
+        } @else {
+        <img class="image" src="assets/user-icon.svg" />
+        }
+      </div>
+      <div class="right">
+        <div class="field">
+          <label for="nickname">Nickname</label>
+          <input id="nickname" type="text" [value]="nickname" />
+        </div>
+        <div class="field">
+          <label for="email">E-Mail</label>
+          <input id="email" type="text" [value]="email" />
+        </div>
+      </div>
+      <button class="logout primary" (click)="onLogOutClick()">Log Out</button>
+    </div>
+  </div>
+</div>
