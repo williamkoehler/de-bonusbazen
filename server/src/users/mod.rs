@@ -1,6 +1,6 @@
 use tracing::*;
 
-use crate::database::Database;
+use crate::databases::postgres::PostgresDb;
 
 pub mod error;
 pub mod model;
@@ -9,11 +9,11 @@ pub mod helper;
 
 #[derive(Clone)]
 pub struct UserManager {
-    database: Database,
+    database: PostgresDb,
 }
 
 impl UserManager {
-    pub async fn new(database: Database) -> error::ResultNew<Self> {
+    pub async fn new(database: PostgresDb) -> error::ResultNew<Self> {
         if database
             .user_count()
             .await
@@ -28,7 +28,7 @@ impl UserManager {
                     Some("Admin"),
                     None,
                     &hash,
-                    crate::database::model::RawRights::Admin,
+                    crate::databases::postgres::model::RawUserRights::Admin,
                 )
                 .await
                 .map_err(|err| error::ErrorNew::Error { inner: err.into() })?;
@@ -106,12 +106,12 @@ impl UserManager {
             .add_user(name, nickname, email, &hash, rights.into())
             .await
             .map_err(|err| match err {
-                crate::database::error::ErrorAddUser::UniqueNameConstraintViolation => {
+                crate::databases::postgres::error::ErrorAddUser::UniqueNameConstraintViolation => {
                     return error::ErrorAddUser::NameIsTaken {
                         name: name.to_string(),
                     };
                 }
-                crate::database::error::ErrorAddUser::UniqueEMailConstraintViolation => {
+                crate::databases::postgres::error::ErrorAddUser::UniqueEMailConstraintViolation => {
                     return error::ErrorAddUser::EMailIsTaken {
                         email: email.unwrap_or_default().to_string(),
                     };

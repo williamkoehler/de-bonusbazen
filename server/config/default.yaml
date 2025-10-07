@@ -3,5 +3,7 @@ server:
   port: 3000
   jwt:
     secret: "super1234#++/brabant"
-database:
+postgres:
   url: "postgresql://admin:admin@localhost:5432/de_bonusbazen"
+redis:
+  url: "redis://localhost:6379"

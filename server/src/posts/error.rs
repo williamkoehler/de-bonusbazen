@@ -4,7 +4,7 @@ use thiserror::Error;
 pub enum ErrorNew {
     #[error("database error: {inner}")]
     DatabaseError {
-        inner: crate::database::error::Error,
+        inner: crate::databases::postgres::error::Error,
     },
 }
 pub type ResultNew<T> = std::result::Result<T, ErrorNew>;
@@ -13,7 +13,7 @@ pub type ResultNew<T> = std::result::Result<T, ErrorNew>;
 pub enum Error {
     #[error("database error: {inner}")]
     DatabaseError {
-        inner: crate::database::error::Error,
+        inner: crate::databases::postgres::error::Error,
     },
 
     #[error("invalid data: {msg}")]

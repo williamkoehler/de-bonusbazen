@@ -7,7 +7,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{AppState, users::model::Rights};
+use crate::{ArcState, users::model::Rights};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PostUserRequestBody {
@@ -28,7 +28,7 @@ struct PatchUserRequestBody {
 }
 
 async fn get_users(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
 ) -> Result<Json<Vec<crate::users::model::User>>, StatusCode> {
     let mut include_normal = false;
@@ -50,7 +50,7 @@ async fn get_users(
 }
 
 async fn get_user(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Path(id): Path<i32>,
 ) -> Result<Json<crate::users::model::User>, StatusCode> {
     let user = state
@@ -63,7 +63,7 @@ async fn get_user(
 }
 
 async fn post_user(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Json(request_body): Json<PostUserRequestBody>,
 ) -> Result<Json<crate::users::model::User>, StatusCode> {
@@ -87,7 +87,7 @@ async fn post_user(
 }
 
 async fn patch_user(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
     Json(request_body): Json<PatchUserRequestBody>,
@@ -116,7 +116,7 @@ async fn patch_user(
 }
 
 async fn get_user_profile_picture(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
     let profile_picture = state
@@ -142,7 +142,7 @@ async fn get_user_profile_picture(
 }
 
 async fn patch_user_profile_picture(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
     bytes: axum::body::Bytes,
@@ -163,7 +163,7 @@ async fn patch_user_profile_picture(
 }
 
 async fn delete_user(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
 ) -> Result<(), StatusCode> {
@@ -180,7 +180,7 @@ async fn delete_user(
     }
 }
 
-pub fn router() -> axum::Router<AppState> {
+pub fn router() -> axum::Router<ArcState> {
     axum::Router::new()
         .route("/", axum::routing::get(get_users).post(post_user))
         .route(

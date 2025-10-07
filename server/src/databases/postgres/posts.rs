@@ -3,12 +3,12 @@ use chrono::Utc;
 use futures_util::TryStreamExt;
 use sqlx::{Executor, Row};
 
-use crate::database::model::RawPostVisibility;
+use crate::databases::postgres::model::*;
 
 use super::error;
 use super::model;
 
-impl super::Database {
+impl super::PostgresDb {
     pub async fn post_count(&self) -> error::Result<usize> {
         let row = sqlx::query("SELECT count(*) as count FROM posts WHERE visibility = 'visible'")
             .fetch_one(&self.pool)

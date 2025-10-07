@@ -1,12 +1,12 @@
 use futures_util::TryStreamExt;
 use sqlx::{Executor, Row};
 
-use crate::database::model::RawRights;
+use crate::databases::postgres::model::*;
 
 use super::error;
 use super::model;
 
-impl super::Database {
+impl super::PostgresDb {
     pub async fn user_count(&self) -> error::Result<usize> {
         let row = sqlx::query("SELECT count(*) as count FROM users")
             .fetch_one(&self.pool)
@@ -36,12 +36,12 @@ impl super::Database {
             let mut separated = query_builder.separated(", ");
 
             if include_members {
-                separated.push_bind(RawRights::Admin);
-                separated.push_bind(RawRights::Maintainer);
-                separated.push_bind(RawRights::Member);
+                separated.push_bind(RawUserRights::Admin);
+                separated.push_bind(RawUserRights::Maintainer);
+                separated.push_bind(RawUserRights::Member);
             }
             if include_normal {
-                separated.push_bind(RawRights::Member);
+                separated.push_bind(RawUserRights::Member);
             }
         }
         query_builder.push(")");
@@ -71,7 +71,7 @@ impl super::Database {
                 .try_get("email")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            let rights: model::RawRights = row
+            let rights: RawUserRights = row
                 .try_get("rights")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -115,7 +115,7 @@ impl super::Database {
             .try_get("email")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let rights: model::RawRights = row
+        let rights: RawUserRights = row
             .try_get("rights")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -156,7 +156,7 @@ impl super::Database {
             .try_get("email")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let rights: model::RawRights = row
+        let rights: RawUserRights = row
             .try_get("rights")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -204,7 +204,7 @@ impl super::Database {
             .try_get("hash")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let rights: model::RawRights = row
+        let rights: RawUserRights = row
             .try_get("rights")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -249,7 +249,7 @@ impl super::Database {
         nickname: Option<&str>,
         email: Option<&str>,
         hash: &str,
-        rights: model::RawRights,
+        rights: RawUserRights,
     ) -> error::ResultAddUser<model::RawUser> {
         let result =  sqlx::query(
             "INSERT INTO users (name, nickname, email, hash, rights) VALUES ($1, $2, $3, $4, $5) RETURNING id",
@@ -303,7 +303,7 @@ impl super::Database {
         name: Option<&str>,
         nickname: Option<Option<&str>>,
         email: Option<Option<&str>>,
-        mut rights: Option<model::RawRights>,
+        mut rights: Option<RawUserRights>,
         profile_picture: Option<&[u8]>,
     ) -> error::Result<()> {
         if id == 1 {

@@ -5,7 +5,7 @@ use axum::{
     response::Response,
 };
 
-use crate::{AppState, users::model::Rights};
+use crate::{ArcState, users::model::Rights};
 
 #[derive(Clone)]
 pub struct AuthExtension {
@@ -14,7 +14,7 @@ pub struct AuthExtension {
 }
 
 pub async fn auth_middleware(
-    State(state): State<AppState>,
+    State(state): State<ArcState>,
     mut request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
@@ -33,7 +33,7 @@ pub async fn auth_middleware(
             };
 
             let claims =
-                crate::users::helper::verify_jwt(token, &state.config.jwt_verification_secret)
+                crate::users::helper::verify_jwt(token, &state.config.jwt_authentication_secret)
                     .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
             AuthExtension {

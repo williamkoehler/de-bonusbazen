@@ -13,7 +13,7 @@ pub type ResultNew<T> = std::result::Result<T, ErrorNew>;
 pub enum Error {
     #[error("database error: {inner}")]
     DatabaseError {
-        inner: crate::database::error::Error,
+        inner: crate::databases::postgres::error::Error,
     },
 
     #[error("invalid data: {msg}")]
@@ -26,7 +26,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum ErrorAddUser {
     #[error("database error: {inner}")]
     DatabaseError {
-        inner: crate::database::error::ErrorAddUser,
+        inner: crate::databases::postgres::error::ErrorAddUser,
     },
 
     #[error("invalid name: {name}")]

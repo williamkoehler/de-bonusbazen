@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "VARCHAR")]
 #[sqlx(rename_all = "lowercase")]
-pub enum RawRights {
+pub enum RawUserRights {
     Unauthenticated,
     Normal,
     Member,
@@ -17,7 +17,7 @@ pub struct RawUser {
     pub name: String,
     pub nickname: Option<String>,
     pub email: Option<String>,
-    pub rights: RawRights,
+    pub rights: RawUserRights,
     pub has_profile_picture: bool,
 }
 

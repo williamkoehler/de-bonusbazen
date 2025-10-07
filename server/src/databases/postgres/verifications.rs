@@ -2,7 +2,7 @@ use sqlx::{Executor, Row};
 
 use super::error;
 
-impl super::Database {
+impl super::PostgresDb {
     pub async fn has_verification(&self, id: i32) -> error::Result<bool> {
         let row = sqlx::query("SELECT count(*) as count FROM verifications WHERE id = $1")
             .bind(id)

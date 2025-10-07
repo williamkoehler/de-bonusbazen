@@ -9,12 +9,12 @@ pub mod users;
 pub mod verifications;
 
 #[derive(Clone)]
-pub struct Database {
+pub struct PostgresDb {
     pool: sqlx::Pool<sqlx::postgres::Postgres>,
 }
 
-impl Database {
-    pub async fn new(config: &crate::config::DatabaseConfig) -> error::ResultNew<Database> {
+impl PostgresDb {
+    pub async fn new(config: &crate::config::PostgresDbConfig) -> error::ResultNew<PostgresDb> {
         let pool = sqlx::postgres::PgPoolOptions::new()
             .max_connections(config.pool_max.unwrap_or(5))
             .connect(&config.url)

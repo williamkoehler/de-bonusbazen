@@ -24,7 +24,7 @@ pub struct PostLoginResponseBody {
 }
 
 pub async fn login(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Json(req_body): Json<PostLoginRequestBody>,
 ) -> Result<Json<PostLoginResponseBody>, StatusCode> {
     let (user, hash) = state
@@ -79,7 +79,7 @@ pub struct PostRegisterRequestBody {
 }
 
 pub async fn post_register(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Json(req_body): Json<PostRegisterRequestBody>,
 ) -> Result<(), StatusCode> {
     let user = state
@@ -99,7 +99,7 @@ pub async fn post_register(
 
     // Add verification
     state
-        .database
+        .postgres
         .add_verification(user.id())
         .await
         .map_err(|err| {
@@ -142,7 +142,7 @@ pub async fn post_register(
 }
 
 pub async fn get_verify(
-    State(state): State<crate::AppState>,
+    State(state): State<crate::ArcState>,
     Path(token): Path<String>,
 ) -> Result<(), StatusCode> {
     // Verify JWT
@@ -157,7 +157,7 @@ pub async fn get_verify(
     };
 
     let verification = state
-        .database
+        .postgres
         .has_verification(claims.id)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
@@ -180,7 +180,7 @@ pub async fn get_verify(
         })?;
 
     // Remove verification
-    if let Err(err) = state.database.remove_verification(claims.id).await {
+    if let Err(err) = state.postgres.remove_verification(claims.id).await {
         error!(id = claims.id, "failed to remove verification: {}", err);
     }
 

@@ -3,7 +3,8 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
-    pub database: DatabaseConfig,
+    pub postgres: PostgresDbConfig,
+    pub redis: RedisDbConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,9 +32,14 @@ pub struct ServerEMailConfig {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct DatabaseConfig {
+pub struct PostgresDbConfig {
     pub url: String,
     pub pool_max: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RedisDbConfig {
+    pub url: String,
 }
 
 pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {

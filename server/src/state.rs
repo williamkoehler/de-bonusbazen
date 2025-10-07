@@ -1,12 +1,18 @@
 use std::sync::Arc;
 
-use crate::{database::Database, posts::PostManager, users::UserManager};
+use crate::*;
 
-#[derive(Clone)]
-pub struct AppState {
-    pub database: Database,
-    pub user_manager: UserManager,
-    pub post_manager: PostManager,
+pub type ArcState = Arc<State>;
+
+pub struct State {
+    pub postgres: databases::postgres::PostgresDb,
+    pub redis: databases::redis::RedisDb,
+
+    pub ah_service: services::ah::AhService,
+
+    pub user_manager: users::UserManager,
+    pub post_manager: posts::PostManager,
+
     pub config: Arc<Config>,
 }
 

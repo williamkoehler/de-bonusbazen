@@ -11,8 +11,8 @@ pub struct User {
     has_profile_picture: bool,
 }
 
-impl From<crate::database::model::RawUser> for User {
-    fn from(raw_user: crate::database::model::RawUser) -> Self {
+impl From<crate::databases::postgres::model::RawUser> for User {
+    fn from(raw_user: crate::databases::postgres::model::RawUser) -> Self {
         Self {
             id: raw_user.id,
             name: raw_user.name,
@@ -61,26 +61,26 @@ pub enum Rights {
     Admin,
 }
 
-impl From<crate::database::model::RawRights> for Rights {
-    fn from(value: crate::database::model::RawRights) -> Self {
+impl From<crate::databases::postgres::model::RawUserRights> for Rights {
+    fn from(value: crate::databases::postgres::model::RawUserRights) -> Self {
         match value {
-            crate::database::model::RawRights::Unauthenticated => Self::Unauthenticated,
-            crate::database::model::RawRights::Normal => Self::Normal,
-            crate::database::model::RawRights::Member => Self::Member,
-            crate::database::model::RawRights::Maintainer => Self::Maintainer,
-            crate::database::model::RawRights::Admin => Self::Admin,
+            crate::databases::postgres::model::RawUserRights::Unauthenticated => Self::Unauthenticated,
+            crate::databases::postgres::model::RawUserRights::Normal => Self::Normal,
+            crate::databases::postgres::model::RawUserRights::Member => Self::Member,
+            crate::databases::postgres::model::RawUserRights::Maintainer => Self::Maintainer,
+            crate::databases::postgres::model::RawUserRights::Admin => Self::Admin,
         }
     }
 }
 
-impl Into<crate::database::model::RawRights> for Rights {
-    fn into(self) -> crate::database::model::RawRights {
+impl Into<crate::databases::postgres::model::RawUserRights> for Rights {
+    fn into(self) -> crate::databases::postgres::model::RawUserRights {
         match self {
-            Self::Unauthenticated => crate::database::model::RawRights::Unauthenticated,
-            Self::Normal => crate::database::model::RawRights::Normal,
-            Self::Member => crate::database::model::RawRights::Member,
-            Self::Maintainer => crate::database::model::RawRights::Maintainer,
-            Self::Admin => crate::database::model::RawRights::Admin,
+            Self::Unauthenticated => crate::databases::postgres::model::RawUserRights::Unauthenticated,
+            Self::Normal => crate::databases::postgres::model::RawUserRights::Normal,
+            Self::Member => crate::databases::postgres::model::RawUserRights::Member,
+            Self::Maintainer => crate::databases::postgres::model::RawUserRights::Maintainer,
+            Self::Admin => crate::databases::postgres::model::RawUserRights::Admin,
         }
     }
 }

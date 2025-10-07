@@ -1,32 +1,22 @@
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::*;
 
-use crate::database::Database;
+use crate::databases::postgres::PostgresDb;
 
 pub mod error;
 pub mod model;
 
 #[derive(Clone)]
 pub struct PostManager {
-    inner: Arc<Mutex<Inner>>,
-}
-
-struct Inner {
-    database: Database,
+    database: PostgresDb,
 }
 
 impl PostManager {
-    pub async fn new(database: Database) -> error::ResultNew<Self> {
-        Ok(Self {
-            inner: Arc::new(Mutex::new(Inner { database })),
-        })
+    pub async fn new(database: PostgresDb) -> error::ResultNew<Self> {
+        Ok(Self { database })
     }
 
     pub async fn posts(&self) -> error::Result<Vec<model::Post>> {
-        let inner = self.inner.lock().await;
-
-        let raw_posts = inner
+        let raw_posts = self
             .database
             .posts(true, true, true)
             .await
@@ -39,9 +29,7 @@ impl PostManager {
     }
 
     pub async fn post(&self, id: i32) -> error::Result<model::Post> {
-        let inner = self.inner.lock().await;
-
-        let raw_post = inner
+        let raw_post = self
             .database
             .post_and_body(id)
             .await
@@ -57,9 +45,7 @@ impl PostManager {
         title: &str,
         body: &str,
     ) -> error::Result<model::Post> {
-        let inner = self.inner.lock().await;
-
-        let raw_post = inner
+        let raw_post = self
             .database
             .add_post(visibility.into(), author, title, body)
             .await
@@ -90,10 +76,7 @@ impl PostManager {
         title: Option<&str>,
         body: Option<&str>,
     ) -> error::Result<()> {
-        let inner = self.inner.lock().await;
-
-        inner
-            .database
+        self.database
             .update_post(id, visibility.map(|v| v.into()), title, None, body)
             .await
             .map_err(|err| {
@@ -107,9 +90,7 @@ impl PostManager {
     }
 
     pub async fn remove_post(&self, id: i32) -> error::Result<()> {
-        let inner = self.inner.lock().await;
-
-        inner.database.remove_post(id).await.map_err(|err| {
+        self.database.remove_post(id).await.map_err(|err| {
             error!(id = id, "failed to remove post: {}", err);
             error::Error::DatabaseError { inner: err }
         })?;

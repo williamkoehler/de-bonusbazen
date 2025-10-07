@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{Router, routing::*};
 use rand::Rng;
 use tracing::{level_filters::LevelFilter, *};
@@ -6,9 +8,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 mod api;
 mod config;
 mod state;
-pub use state::AppState;
+pub use state::ArcState;
 
-mod database;
+mod databases;
 mod services;
 
 mod posts;
@@ -42,15 +44,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = crate::config::load_config()?;
 
     // Initialize server
-    let database = database::Database::new(&config.database).await?;
+    let postgres = databases::postgres::PostgresDb::new(&config.postgres).await?;
+    let redis = databases::redis::RedisDb::new(&config.redis).await?;
 
-    let user_manager = users::UserManager::new(database.clone()).await?;
-    let post_manager = posts::PostManager::new(database.clone()).await?;
+    let ah_service = services::ah::AhService::new(redis.clone());
 
-    let state = AppState {
-        database,
+    let user_manager = users::UserManager::new(postgres.clone()).await?;
+    let post_manager = posts::PostManager::new(postgres.clone()).await?;
+
+    let state = Arc::new(state::State {
+        // Databases
+        postgres,
+        redis,
+
+        // Services
+        ah_service,
+
+        // Managers
         user_manager,
         post_manager,
+
+        // Global config
         config: std::sync::Arc::new(state::Config {
             jwt_verification_secret: config.server.jwt.verification_secret.unwrap_or_else(|| {
                 rand::rng()
@@ -70,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
             jwt_expiry_time: config.server.jwt.expire.unwrap_or(432000 /* 5 days */),
         }),
-    };
+    });
 
     // Initialize http server
     let app = Router::new().nest(

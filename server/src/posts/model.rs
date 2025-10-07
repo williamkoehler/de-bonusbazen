@@ -51,8 +51,8 @@ impl Post {
     }
 }
 
-impl From<crate::database::model::RawPost> for Post {
-    fn from(raw_post: crate::database::model::RawPost) -> Self {
+impl From<crate::databases::postgres::model::RawPost> for Post {
+    fn from(raw_post: crate::databases::postgres::model::RawPost) -> Self {
         Self {
             id: raw_post.id,
             visibility: raw_post.visibility.into(),
@@ -66,8 +66,8 @@ impl From<crate::database::model::RawPost> for Post {
     }
 }
 
-impl From<(crate::database::model::RawPost, String)> for Post {
-    fn from(value: (crate::database::model::RawPost, String)) -> Self {
+impl From<(crate::databases::postgres::model::RawPost, String)> for Post {
+    fn from(value: (crate::databases::postgres::model::RawPost, String)) -> Self {
         let (raw_post, body) = value;
         Self {
             id: raw_post.id,
@@ -90,22 +90,22 @@ pub enum PostVisibility {
     Visible,
 }
 
-impl From<crate::database::model::RawPostVisibility> for PostVisibility {
-    fn from(value: crate::database::model::RawPostVisibility) -> Self {
+impl From<crate::databases::postgres::model::RawPostVisibility> for PostVisibility {
+    fn from(value: crate::databases::postgres::model::RawPostVisibility) -> Self {
         match value {
-            crate::database::model::RawPostVisibility::Visible => Self::Visible,
-            crate::database::model::RawPostVisibility::Draft => Self::Draft,
-            crate::database::model::RawPostVisibility::Hidden => Self::Hidden,
+            crate::databases::postgres::model::RawPostVisibility::Visible => Self::Visible,
+            crate::databases::postgres::model::RawPostVisibility::Draft => Self::Draft,
+            crate::databases::postgres::model::RawPostVisibility::Hidden => Self::Hidden,
         }
     }
 }
 
-impl Into<crate::database::model::RawPostVisibility> for PostVisibility {
-    fn into(self) -> crate::database::model::RawPostVisibility {
+impl Into<crate::databases::postgres::model::RawPostVisibility> for PostVisibility {
+    fn into(self) -> crate::databases::postgres::model::RawPostVisibility {
         match self {
-            Self::Visible => crate::database::model::RawPostVisibility::Visible,
-            Self::Draft => crate::database::model::RawPostVisibility::Draft,
-            Self::Hidden => crate::database::model::RawPostVisibility::Hidden,
+            Self::Visible => crate::databases::postgres::model::RawPostVisibility::Visible,
+            Self::Draft => crate::databases::postgres::model::RawPostVisibility::Draft,
+            Self::Hidden => crate::databases::postgres::model::RawPostVisibility::Hidden,
         }
     }
 }
@@ -116,8 +116,8 @@ pub struct PostMetadata {}
 
 impl PostMetadata {}
 
-impl From<crate::database::model::RawPostMetadata> for PostMetadata {
-    fn from(_value: crate::database::model::RawPostMetadata) -> Self {
+impl From<crate::databases::postgres::model::RawPostMetadata> for PostMetadata {
+    fn from(_value: crate::databases::postgres::model::RawPostMetadata) -> Self {
         Self {}
     }
 }

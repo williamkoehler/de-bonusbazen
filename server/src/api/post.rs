@@ -6,7 +6,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{AppState, posts::model::PostVisibility, users::model::Rights};
+use crate::{ArcState, posts::model::PostVisibility, users::model::Rights};
 
 #[derive(Debug, Deserialize)]
 struct PostPostRequestBody {
@@ -23,7 +23,7 @@ struct PatchPostRequestBody {
 }
 
 async fn get_posts(
-    State(state): State<AppState>,
+    State(state): State<ArcState>,
 ) -> Result<Json<Vec<crate::posts::model::Post>>, StatusCode> {
     let posts = state.post_manager.posts().await.map_err(|err| {
         error!("failed to get posts: {}", err);
@@ -34,7 +34,7 @@ async fn get_posts(
 }
 
 async fn get_post(
-    State(state): State<AppState>,
+    State(state): State<ArcState>,
     Path(id): Path<i32>,
 ) -> Result<Json<crate::posts::model::Post>, StatusCode> {
     let post = state
@@ -47,7 +47,7 @@ async fn get_post(
 }
 
 async fn post_post(
-    State(state): State<AppState>,
+    State(state): State<ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Json(request_body): Json<PostPostRequestBody>,
 ) -> Result<Json<crate::posts::model::Post>, StatusCode> {
@@ -81,7 +81,7 @@ async fn post_post(
 }
 
 async fn patch_post(
-    State(state): State<AppState>,
+    State(state): State<ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
     Json(request_body): Json<PatchPostRequestBody>,
@@ -121,7 +121,7 @@ async fn patch_post(
 }
 
 async fn delete_post(
-    State(state): State<AppState>,
+    State(state): State<ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
 ) -> Result<(), StatusCode> {
@@ -138,7 +138,7 @@ async fn delete_post(
     }
 }
 
-pub fn router() -> axum::Router<AppState> {
+pub fn router() -> axum::Router<ArcState> {
     axum::Router::new()
         .route("/", axum::routing::get(get_posts).post(post_post))
         .route(
