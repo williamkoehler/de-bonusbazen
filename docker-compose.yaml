@@ -1,16 +1,62 @@
 services:
-  db:
-    image: postgres:18
-    container_name: postgres_database
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: de_bonusbazen
-    ports:
-      - "5432:5432"
-    volumes:
-      - database_data:/var/lib/postgresql/data
+    postgres_database:
+        image: postgres:18
+        container_name: postgres_database
+        restart: always
+        environment:
+            POSTGRES_USER: admin
+            POSTGRES_PASSWORD: admin
+            POSTGRES_DB: dbb
+        ports:
+            - "5432:5432"
+        volumes:
+            - database_data:/var/lib/postgresql/data
+        networks:
+            - my_network
+
+    redis_database:
+        image: redis:8
+        container_name: redis_database
+        restart: always
+        ports:
+            - "6379:6379"
+        networks:
+            - my_network
+
+    nginx:
+        image: de-bonusbazen-nginx:latest
+        container_name: nginx
+        restart: always
+        environment:
+            BACKEND_HOST: server
+            BACKEND_PORT: 8000
+        ports:
+            - "3000:80"
+        depends_on:
+            - server
+        networks:
+            - my_network
+
+    server:
+        image: de-bonusbazen-server:latest
+        container_name: server
+        restart: always
+        environment:
+            APP__SERVER__HOST: 0.0.0.0
+            APP__SERVER__PORT: 8000
+            APP__SERVER__JWT__SECRET: your_jwt_secret
+            APP__POSTGRES__URL: postgresql://admin:admin@postgres_database:5432/dbb
+            APP__REDIS__URL: redis://redis_database:6379
+        ports:
+            - "8000:8000"
+        depends_on:
+            - postgres_database
+            - redis_database
+        networks:
+            - my_network
 
 volumes:
-  database_data:
+    database_data:
+
+networks:
+    my_network:
