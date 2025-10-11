@@ -9,6 +9,7 @@ pub struct State {
     pub redis: databases::redis::RedisDb,
 
     pub ah_service: services::ah::AhService,
+    pub ah_manager: misc::ah::AhManager,
 
     pub user_manager: users::UserManager,
     pub post_manager: posts::PostManager,

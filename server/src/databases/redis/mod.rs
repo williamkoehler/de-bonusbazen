@@ -1,6 +1,7 @@
 pub mod error;
 
 pub mod users;
+pub mod misc;
 
 #[derive(Clone)]
 pub struct RedisDb {

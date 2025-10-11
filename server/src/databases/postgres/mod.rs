@@ -8,6 +8,8 @@ pub mod posts;
 pub mod users;
 pub mod verifications;
 
+pub mod ah;
+
 #[derive(Clone)]
 pub struct PostgresDb {
     pool: sqlx::Pool<sqlx::postgres::Postgres>,
@@ -39,6 +41,13 @@ impl PostgresDb {
             .await
             .map_err(|err|{
                 error!("failed to create posts table: {}", err);
+                error::ErrorNew::SqlxError { inner: err }
+            })?;
+        
+        pool.execute(sqlx::query("CREATE TABLE IF NOT EXISTS ah_products (id BIGINT PRIMARY KEY, data JSONB NOT NULL)"))
+            .await
+            .map_err(|err|{
+                error!("failed to create ah_products table: {}", err);
                 error::ErrorNew::SqlxError { inner: err }
             })?;
 
