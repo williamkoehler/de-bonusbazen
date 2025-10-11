@@ -5,6 +5,7 @@ import { AboutPageComponent } from './pages/about/about.page.component';
 import { AccountPageComponent } from './pages/account/account.page.component';
 import { LoginPageComponent } from './pages/login/login.page.component';
 import { RegisterPageComponent } from './pages/register/register.page.component';
+import { AhMostBonusPageComponent } from './pages/ah/ah.most-bonus.page/ah.most-bonus.page.component';
 
 export const routes: Routes = [
     {
@@ -19,6 +20,15 @@ export const routes: Routes = [
     {
         path: 'blog',
         component: BlogPageComponent
+    },
+    {
+        path: 'ah',
+        children: [
+            {
+                path: 'mostBonus',
+                component: AhMostBonusPageComponent,
+            }
+        ]
     },
     {
         path: 'about',

@@ -1,0 +1,24 @@
+<div class="container">
+  <h1>Albert Heijn*</h1>
+  <p>*The best place to check out the most bonusable items at appie.</p>
+  <div class="products">
+    @for(product of products; track product) {
+    <div class="product">
+      @if (product.image) {
+      <img class="image" [src]="product.image" />
+      } @else {
+      <img class="image" src="assets/user-icon.svg" />
+      }
+      <div class="name">{{ product.name }}</div>
+      <div class="price">
+        {{ product.price }}€
+        <div class="instead-of">{{ product.price_before_bonus }}€</div>
+      </div>
+      <!-- <div class="date unselectable">
+        created on {{ formatDate(post.createdAt) }}
+      </div> -->
+      <!-- <div class="body">{{ product.body }}</div> -->
+    </div>
+    }
+  </div>
+</div>
