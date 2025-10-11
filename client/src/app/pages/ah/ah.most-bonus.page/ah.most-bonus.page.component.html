@@ -1,18 +1,26 @@
-<div class="container">
-  <h1>Albert Heijn*</h1>
-  <p>*The best place to check out the most bonusable items at appie.</p>
-  <div class="products">
+<div class="max-w-4xl mx-auto mt-10">
+  <h1 class="text-4xl font-extrabold text-center mb-4">Albert Heijn*</h1>
+  <p class="text-sm font-extralight text-center">
+    *The best place to check out the most bonusable items.
+  </p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
     @for(product of products; track product) {
-    <div class="product">
+    <div
+      class="flex flex-col items-center gap-y-2 h-85 bg-white shadow-md md:rounded-lg p-4 hover:shadow-lg transition-shadow duration-300"
+    >
       @if (product.image) {
-      <img class="image" [src]="product.image" />
+      <img class="w-50 h-50 rounded-lg object-cover" [src]="product.image" />
       } @else {
-      <img class="image" src="assets/user-icon.svg" />
+      <img
+        class="w-50 h-50 rounded-lg object-cover"
+        src="assets/user-icon.svg"
+      />
       }
-      <div class="name">{{ product.name }}</div>
+      <div class="text-center line-clamp-2 mx-5">{{ product.name }}</div>
       <div class="price">
         {{ product.price }}€
-        <div class="instead-of">{{ product.price_before_bonus }}€</div>
+        <div class="inline text-red-500 line-through">{{ product.price_before_bonus }}€</div>
       </div>
       <!-- <div class="date unselectable">
         created on {{ formatDate(post.createdAt) }}

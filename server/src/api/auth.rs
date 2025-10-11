@@ -20,6 +20,7 @@ pub struct PostLoginResponseBody {
     token: String,
     id: i32,
     nickname: Option<String>,
+    email: Option<String>,
     rights: crate::users::model::Rights,
 }
 
@@ -66,6 +67,7 @@ pub async fn login(
         token,
         id: user.id(),
         nickname: user.nickname().map(|x| x.to_string()),
+        email: user.email().map(|x| x.to_string()),
         rights: user.rights(),
     }))
 }
@@ -172,7 +174,15 @@ pub async fn get_verify(
     // Update user rights to normal
     state
         .user_manager
-        .update_user(claims.id, None, None, None, Some(Rights::Normal), None)
+        .update_user(
+            claims.id,
+            None,
+            None,
+            None,
+            None,
+            Some(Rights::Normal),
+            None,
+        )
         .await
         .map_err(|err| {
             error!(id = claims.id, "failed to set user rights: {}", err);

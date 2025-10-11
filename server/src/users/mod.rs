@@ -130,6 +130,7 @@ impl UserManager {
         name: Option<&str>,
         nickname: Option<Option<&str>>,
         email: Option<Option<&str>>,
+        password: Option<&str>,
         rights: Option<model::Rights>,
         profile_picture: Option<&[u8]>,
     ) -> error::Result<()> {
@@ -170,12 +171,19 @@ impl UserManager {
             None
         };
 
+        let hash = if let Some(password) = password {
+            Some(helper::generate_hash(password))
+        } else {
+            None
+        };
+
         self.database
             .update_user(
                 id,
                 name,
                 nickname,
                 email,
+                hash.as_deref(),
                 rights.map(|x| x.into()),
                 profile_picture.as_deref(),
             )

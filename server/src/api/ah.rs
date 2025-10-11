@@ -1,6 +1,6 @@
 use axum::{
-    Extension, Json,
-    extract::{Path, Query, State},
+    Json,
+    extract::{Query, State},
     http::StatusCode,
 };
 use serde::*;

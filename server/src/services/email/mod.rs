@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use tokio::sync::Mutex;
+// use std::sync::Arc;
+// use tokio::sync::Mutex;
 
-pub struct EMailService {
-    inner: Arc<Mutex<Inner>>,
-}
+// pub struct EMailService {
+//     inner: Arc<Mutex<Inner>>,
+// }
 
-struct Inner {
+// struct Inner {
 
-}
+// }

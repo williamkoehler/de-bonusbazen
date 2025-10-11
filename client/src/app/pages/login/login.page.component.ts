@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { AccountService } from '../../services/account.service';
 import { InvalidNameOrPasswordServiceError } from '../../services/errors';
 
+const NAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+
 @Component({
     selector: 'app-login-page',
     imports: [
@@ -17,7 +19,7 @@ export class LoginPageComponent implements OnInit {
     name: string = '';
     password: string = '';
 
-    error?: string;
+    error: string = '';
 
     constructor(private accountService: AccountService, private router: Router) { }
 
@@ -28,9 +30,34 @@ export class LoginPageComponent implements OnInit {
     }
 
     async onLogInClick() {
-        if (this.name == '' || this.password == '') {
-            this.error = "Fill in the name and password fields.";
-            return;
+        // Clean up inputs
+        this.name = this.name.trim();
+
+        // Validate inputs
+        {
+            let missing = [];
+            let invalid = [];
+
+            if (this.name === '')
+                missing.push("Name");
+            else if (!NAME_REGEX.test(this.name))
+                invalid.push("Name");
+
+            if (this.password === '')
+                missing.push("Password");
+
+            if (missing.length > 0 || invalid.length > 0) {
+                let errors = []
+
+                if (missing.length > 0)
+                    errors.push("Missing fields: " + missing.join(", "));
+
+                if (invalid.length > 0)
+                    errors.push("Invalid fields: " + invalid.join(", "));
+
+                this.error = errors.join("\n");
+                return;
+            }
         }
 
         try {

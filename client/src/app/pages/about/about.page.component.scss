@@ -1,61 +1,61 @@
-@import "variables";
+// @import "variables";
 
-.container {
-    display: flex;
-    flex-direction: column;
-    gap: 64px;
+// .container {
+//     display: flex;
+//     flex-direction: column;
+//     gap: 64px;
 
-    margin: 64px;
-    padding: 0 10%;
+//     margin: 64px;
+//     padding: 0 10%;
 
-    .logo {
-        text-align: center;
+//     .logo {
+//         text-align: center;
 
-        img {
-            max-width: 500px;
-            width: 100%;
-            height: auto;
-        }
-    }
+//         img {
+//             max-width: 500px;
+//             width: 100%;
+//             height: auto;
+//         }
+//     }
 
-    .members {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0;
-        align-items: center;
+//     .members {
+//         display: grid;
+//         grid-template-columns: repeat(3, 1fr);
+//         gap: 0;
+//         align-items: center;
 
-        .member {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
+//         .member {
+//             display: flex;
+//             flex-direction: column;
+//             align-items: center;
+//             gap: 16px;
 
-            margin: 16px;
+//             margin: 16px;
 
-            // width: 200px;
-            aspect-ratio: 1 / 1;
+//             // width: 200px;
+//             aspect-ratio: 1 / 1;
 
-            .image {
-                width: 60%;
-                aspect-ratio: 1 / 1;
+//             .image {
+//                 width: 60%;
+//                 aspect-ratio: 1 / 1;
 
-                padding: 4px;
-                box-sizing: content-box;
+//                 padding: 4px;
+//                 box-sizing: content-box;
 
-                border-radius: 50%;
-                border: 2px solid black;
-            }
+//                 border-radius: 50%;
+//                 border: 2px solid black;
+//             }
 
-            .info {
-                flex-grow: 1;
+//             .info {
+//                 flex-grow: 1;
 
-                text-align: center;
-                vertical-align: middle;
+//                 text-align: center;
+//                 vertical-align: middle;
 
-                .role {
-                    font-size: 80%;
-                }
-            }
-        }
-    }
-}
+//                 .role {
+//                     font-size: 80%;
+//                 }
+//             }
+//         }
+//     }
+// }

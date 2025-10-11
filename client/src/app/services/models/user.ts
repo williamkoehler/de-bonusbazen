@@ -2,6 +2,7 @@ export class User {
     id: number;
     name: string
     nickname: string | undefined;
+    email: string | undefined;
     rights: UserRights;
     hasProfilePicture: boolean;
 
@@ -14,6 +15,8 @@ export class User {
         this.id = rawUser.id;
         this.name = rawUser.name ?? "[unknown]";
         this.nickname = rawUser.nickname;
+        this.email = rawUser.email;
+
         switch (rawUser.rights) {
             case 'normal':
                 this.rights = UserRights.Normal;
@@ -32,6 +35,7 @@ export class User {
                 this.rights = UserRights.Unauthenticated;
                 break;
         }
+        
         this.hasProfilePicture = rawUser.has_profile_picture ?? false;
     }
 }
@@ -48,6 +52,7 @@ export interface RawUser {
     id?: number;
     name?: string;
     nickname?: string;
+    email?: string;
     rights?: string;
     has_profile_picture?: boolean;
 }

@@ -1,39 +1,103 @@
-<nav>
-  <div class="container">
-    <div class="left">
-      <div class="logo">
+<nav class="bg-white shadow-md fixed w-full z-10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-20">
+      <div class="flex space-x-4 items-center">
         <a routerLink="/">
-          <div>
-            <img src="assets/logo-small.svg" />
-          </div>
+          <img
+            class="h-10 w-10 p-2 bg-white rounded-full"
+            src="assets/logo-small.svg"
+          />
+        </a>
+        <a class="text-xl text-white hover:text-gray-200" routerLink="/home"
+          >Home</a
+        >
+        <div class="border-l-2 py-1 h-6 border-white"></div>
+        <a class="text-xl text-white hover:text-gray-200" routerLink="/blog"
+          >Blog</a
+        >
+        <div class="hidden md:block border-l-2 py-1 h-6 border-white"></div>
+        <a
+          class="hidden md:block text-xl text-white hover:text-gray-200"
+          routerLink="/about"
+        >
+          About
+        </a>
+        <div class="hidden md:block border-l-2 py-1 h-6 border-white"></div>
+        <a
+          class="hidden md:block text-xl text-white hover:text-gray-200"
+          routerLink="/ah/mostBonus"
+        >
+          Appie
         </a>
       </div>
-      <div class="item">
-        <a routerLink="/home">Home</a>
+      <div class="hidden md:flex space-x-4 items-center">
+        @if(isLoggedIn) {
+        <a class="text-xl text-white hover:text-gray-200" routerLink="/account">
+          {{ nickname }}
+        </a>
+        } @else {
+        <a class="text-xl text-white hover:text-gray-200" routerLink="/login">
+          Log In
+        </a>
+        <div class="border-l-2 py-1 h-6 border-white"></div>
+        <a
+          class="text-xl text-white hover:text-gray-200"
+          routerLink="/register"
+        >
+          Register
+        </a>
+        }
       </div>
-      <div class="item">
-        <a routerLink="/blog">Blog</a>
+      <div class="md:hidden flex items-center">
+        <button
+          (click)="menuOpen = !menuOpen"
+          class="text-gray-700 focus:outline-none"
+        >
+          <i class="bi bi-list text-white text-2xl"></i>
+        </button>
       </div>
-      <div class="item">
-        <a routerLink="/ah/mostBonus">Appie</a>
-      </div>
-      <div class="item">
-        <a routerLink="/about">About</a>
-      </div>
-    </div>
-    <div class="right">
-      @if(isLoggedIn) {
-      <div class="item">
-        <a routerLink="/account">{{ nickname }}</a>
-      </div>
-      } @else {
-      <div class="item">
-        <a routerLink="/login">Log In</a>
-      </div>
-      <div class="item">
-        <a routerLink="/register">Register</a>
-      </div>
-      }
     </div>
   </div>
+
+  <!-- Mobile Menu -->
+  @if(menuOpen) {
+  <div class="md:hidden px-4 pt-4 pb-4 space-y-3 bg-white shadow">
+    <a class="block text-lg text-gray-700 hover:text-black" routerLink="/home">
+      Home
+    </a>
+    <a class="block text-lg text-gray-700 hover:text-black" routerLink="/blog">
+      Blog
+    </a>
+    <a class="block text-lg text-gray-700 hover:text-black" routerLink="/about">
+      About
+    </a>
+
+    <div class="border-t-2 w-25 border-black"></div>
+
+    <a class="block text-lg text-gray-700 hover:text-black" routerLink="/ah/mostBonus">
+      Appie
+    </a>
+
+    <div class="border-t-2 w-25 border-black"></div>
+
+    @if(isLoggedIn) {
+    <a
+      class="block text-lg text-black hover:text-gray-200"
+      routerLink="/account"
+    >
+      {{ nickname }}
+    </a>
+    } @else {
+    <a class="block text-lg text-black hover:text-gray-200" routerLink="/login">
+      Log In
+    </a>
+    <a
+      class="block text-lg text-black hover:text-gray-200"
+      routerLink="/register"
+    >
+      Register
+    </a>
+    }
+  </div>
+  }
 </nav>

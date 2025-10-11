@@ -303,6 +303,7 @@ impl super::PostgresDb {
         name: Option<&str>,
         nickname: Option<Option<&str>>,
         email: Option<Option<&str>>,
+        hash: Option<&str>,
         mut rights: Option<RawUserRights>,
         profile_picture: Option<&[u8]>,
     ) -> error::Result<()> {
@@ -314,25 +315,40 @@ impl super::PostgresDb {
 
         let mut separated = query_builder.separated(", ");
 
+        let mut no_set = true;
         if let Some(name) = name {
             separated.push("name = ");
             separated.push_bind_unseparated(name);
+            no_set = false;
         }
         if let Some(nickname) = nickname {
             separated.push("nickname = ");
             separated.push_bind_unseparated(nickname);
+            no_set = false;
         }
         if let Some(email) = email {
             separated.push("email = ");
             separated.push_bind_unseparated(email);
+            no_set = false;
+        }
+        if let Some(hash) = hash {
+            separated.push("hash = ");
+            separated.push_bind_unseparated(hash);
+            no_set = false;
         }
         if let Some(rights) = rights {
             separated.push("rights = ");
             separated.push_bind_unseparated(rights);
+            no_set = false;
         }
         if let Some(profile_picture) = profile_picture {
             separated.push("profile_picture = ");
             separated.push_bind_unseparated(hex::encode(profile_picture));
+            no_set = false;
+        }
+
+        if no_set {
+            return Ok(());
         }
 
         query_builder.push(" WHERE id = ");

@@ -1,12 +1,22 @@
 @import "../node_modules/bootstrap-icons/font/bootstrap-icons.css";
-
 @import 'variables';
+
+.bg-appie-blue {
+    background-color: $appie-blue;
+}
+
+.bg-groente-green {
+    background-color: $groente-green;
+}
+
+
+@import "tailwindcss";
 
 * {
     font-family: "Jost", sans-serif;
     font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
+
+    transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out, border-color 0.1s ease-in-out;
 }
 
 html {
@@ -30,74 +40,73 @@ html {
         user-select: none;
     }
 }
+// // Input styling
+// input {
+//     display: block;
+//     width: 100%;
+//     //   max-width: 320px;
+//     padding: 0.6rem 0.9rem;
+//     box-sizing: border-box;
 
-// Input styling
-input {
-    display: block;
-    width: 100%;
-    //   max-width: 320px;
-    padding: 0.6rem 0.9rem;
-    box-sizing: border-box;
+//     border-radius: 8px;
+//     border: 1px solid #9b9ea3;
+//     background-color: white;
+//     color: #111827;
+//     font-size: 1rem;
+//     transition: all 0.3s ease;
 
-    border-radius: 8px;
-    border: 1px solid #9b9ea3;
-    background-color: white;
-    color: #111827;
-    font-size: 1rem;
-    transition: all 0.3s ease;
+//     &:focus {
+//         outline: none;
+//         border-color: #63676d;
+//         box-shadow: 0 0 0 3px rgba($appie-blue, 0.2);
+//         // box-shadow: 0 0 0 3px #63676d2f;
+//     }
 
-    &:focus {
-        outline: none;
-        border-color: #63676d;
-        box-shadow: 0 0 0 3px rgba($apii-blue, 0.2);
-        // box-shadow: 0 0 0 3px #63676d2f;
-    }
+//     &::placeholder {
+//         color: #9ca3af;
+//     }
+// }
 
-    &::placeholder {
-        color: #9ca3af;
-    }
-}
+// // Button styling
+// button {
+//     display: inline-block;
+//     padding: 0.6rem 1.2rem;
 
-// Button styling
-button {
-    display: inline-block;
-    padding: 0.6rem 1.2rem;
-
-    border-radius: 8px;
-    border: none;
-    font-size: 1rem;
-    font-weight: 500;
-    background-color: transparent;
-    cursor: pointer;
+//     border-radius: 8px;
+//     border: none;
+//     font-size: 1rem;
+//     font-weight: 500;
+//     background-color: transparent;
+//     cursor: pointer;
     
-    transition: all 0.3s ease;
+//     transition: all 0.3s ease;
 
-    &.primary {
-        background-color: $apii-blue;
-        color: #ffffff;
+//     &.primary {
+//         background-color: $appie-blue;
+//         color: #ffffff;
 
-        &:hover {
-            background-color: $apii-dark-blue;
-        }
+//         &:hover {
+//             background-color: $appie-dark-blue;
+//         }
 
-        &:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba($apii-blue, 0.2);
-        }
-    }
+//         &:focus {
+//             outline: none;
+//             box-shadow: 0 0 0 3px rgba($appie-blue, 0.2);
+//         }
+//     }
 
-    &.secondary {
-        background-color: #f9fafb;
-        color: #111827;
-        border-color: #d1d5db;
+//     &.secondary {
+//         background-color: #f9fafb;
+//         color: #111827;
+//         border-color: #d1d5db;
 
-        &:hover {
-            background-color: #f3f4f6;
-        }
+//         &:hover {
+//             background-color: #f3f4f6;
+//         }
 
-        &:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(209, 213, 219, 0.3);
-        }
-    }
-}
+//         &:focus {
+//             outline: none;
+//             box-shadow: 0 0 0 3px rgba(209, 213, 219, 0.3);
+//         }
+//     }
+// }

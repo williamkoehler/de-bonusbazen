@@ -7,6 +7,7 @@ export interface RawLoginResponseBody {
     token: string;
     id: number;
     nickname?: string;
+    email: string;
     rights: string;
 } 
 
@@ -16,3 +17,9 @@ export interface RawRegisterRequestBody {
     email: string;
     password: string;
 } 
+
+export interface RawUpdateRequestBody {
+    nickname?: string;
+    email?: string;
+    password?: string;
+}

@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { RawLoginRequestBody, RawLoginResponseBody, RawRegisterRequestBody } from './models/account';
+import { RawLoginRequestBody, RawLoginResponseBody, RawRegisterRequestBody, RawUpdateRequestBody } from './models/account';
 import { InternalServiceError, InvalidNameOrPasswordServiceError } from './errors';
 import store from 'store2';
 
@@ -9,6 +9,7 @@ interface AccountInfo {
     id: number;
     name: string;
     nickname: string;
+    email?: string;
     rights: string;
 }
 
@@ -38,6 +39,10 @@ export class AccountService {
         return this._info?.nickname;
     }
 
+    get email(): string | undefined {
+        return this._info?.email;
+    }
+
     get rights(): string | undefined {
         return this._info?.rights;
     }
@@ -58,6 +63,7 @@ export class AccountService {
             id: accountStore('id'),
             name: accountStore('name'),
             nickname: accountStore('nickname'),
+            email: accountStore('email'),
             rights: accountStore('rights'),
         }
     }
@@ -70,6 +76,7 @@ export class AccountService {
             accountStore('id', this._info.id);
             accountStore('name', this._info.name);
             accountStore('nickname', this._info.nickname);
+            accountStore('email', this._info.email);
             accountStore('rights', this._info.rights);
         }
         else {
@@ -91,6 +98,7 @@ export class AccountService {
                         id: body.id,
                         name: name,
                         nickname: body.nickname ?? name,
+                        email: body.email,
                         rights: body.rights
                     };
 
@@ -135,5 +143,75 @@ export class AccountService {
                 }
             });
         });
+    }
+
+    async update(nickname?: string, email?: string, password?: string) {
+        if (this._info) {
+            return new Promise<void>((resolve, reject) => {
+                const requestBody: RawUpdateRequestBody = {
+                    nickname: nickname,
+                    email: email,
+                    password: password,
+                }
+
+                this.httpClient.patch(
+                    `/api/users/${this.id}`,
+                    requestBody,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${this.token}`
+                        }
+                    }
+                )
+                    .subscribe({
+                        next: _ => {
+                            if (nickname)
+                                this._info!.nickname = nickname;
+                            if (email)
+                                this._info!.email = email;
+
+                            this.writeStore();
+
+                            resolve();
+                        },
+                        error: err => {
+                            reject(err);
+                        }
+                    });
+            });
+        }
+    }
+
+    async updateProfilePicture(file: File) {
+        if (this._info) {
+            return new Promise<void>((resolve, reject) => {
+                var reader = new FileReader();
+
+                reader.readAsArrayBuffer(file);
+
+                reader.onload = (event) => {
+                    const arrayBuffer = event.target!.result as ArrayBuffer;
+
+                    this.httpClient.patch(
+                        `/api/users/${this.id}/profile_picture`,
+                        arrayBuffer,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${this.token}`
+                            }
+                        }
+                    )
+                        .subscribe({
+                            next: _ => {
+                                resolve();
+                            },
+                            error: err => {
+                                reject(err);
+                            }
+                        });
+
+                }
+            });
+        }
     }
 }

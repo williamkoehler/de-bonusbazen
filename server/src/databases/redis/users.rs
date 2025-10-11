@@ -1,4 +1,4 @@
-use super::error;
+// use super::error;
 
 // impl RedisDb {
 

@@ -1,26 +1,134 @@
-<div class="container">
-  <h1>Your Account*</h1>
-  <p>*The best place to check and change your BonusBazen settings.</p>
-  <div class="content">
-    <div class="info">
-      <div class="left">
-        @if (hasProfilePicture) {
-        <img class="image" [src]="'api/users/' + id + '/profile_picture'" />
-        } @else {
-        <img class="image" src="assets/user-icon.svg" />
-        }
-      </div>
-      <div class="right">
-        <div class="field">
-          <label for="nickname">Nickname</label>
-          <input id="nickname" type="text" [value]="nickname" />
-        </div>
-        <div class="field">
-          <label for="email">E-Mail</label>
-          <input id="email" type="text" [value]="email" />
-        </div>
-      </div>
-      <button class="logout primary" (click)="onLogOutClick()">Log Out</button>
-    </div>
+<div
+  class="md:max-w-xl h-full md:h-auto p-6 mx-auto md:mt-24 bg-white md:rounded-xl shadow-sm shadow-black-100/50"
+>
+  <div class="flex flex-row justify-between items-center mb-6">
+    <h2 class="text-2xl font-semiboldtext-gray-800">Account</h2>
+    <button
+      (click)="onLogOutClick()"
+      class="px-4 py-2 text-black border border-transparent rounded-full hover:border-black"
+    >
+      Log Out
+    </button>
   </div>
+
+  <div class="flex flex-col items-center space-y-4 mb-6">
+    @if (hasProfilePicture) {
+    <img
+      alt="Profile"
+      class="w-40 h-40 rounded-full object-cover border"
+      [src]="profilePictureUrl"
+    />
+    } @else {
+    <img
+      alt="Profile"
+      class="w-40 h-40 p-1 rounded-full object-cover border"
+      src="assets/user-icon.svg"
+    />
+    }
+    <button
+      class="px-4 py-2 border text-black bg-white rounded-full hover:text-white hover:bg-black"
+      (click)="fileInput.click()"
+    >
+      Change Picture
+    </button>
+    <input
+      type="file"
+      accept="image/*"
+      #fileInput
+      hidden
+      (change)="onFileSelected($event)"
+    />
+  </div>
+
+  <form (ngSubmit)="onUpdateClick()" #accountForm="ngForm" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700">
+        Nickname @if(hasNicknameChanged) { * }
+      </label>
+      <input
+        type="text"
+        [(ngModel)]="nickname"
+        name="nickname"
+        required
+        class="block w-full px-4 py-2 mt-1 border rounded-md focus:border-black-300"
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">
+        E-Mail @if(hasEmailChanged) { * }
+      </label>
+      <input
+        type="email"
+        [(ngModel)]="email"
+        name="email"
+        required
+        class="block w-full px-4 py-2 mt-1 border rounded-md focus:border-black-300"
+      />
+    </div>
+
+    <!-- <div>
+      <label class="block text-sm font-medium text-gray-700">Password</label>
+      <input
+        type="password"
+        [(ngModel)]="user.password"
+        name="password"
+        class="mt-1 block w-full px-4 py-2 border rounded-md focus:ring focus:ring-blue-300"
+      />
+    </div> -->
+
+    <div class="flex justify-center items-center mt-4">
+      <button
+        type="submit"
+        class="w-50 py-2 bg-appie-blue text-white rounded-full hover:bg-green-700"
+        [disabled]="updatePendingState != 0"
+      >
+        @if (updatePendingState != 1) { Save Changes } @else { Saving Changes...
+        }
+      </button>
+    </div>
+  </form>
+
+  <form
+    (ngSubmit)="onUpdatePasswordClick()"
+    #passwordForm="ngForm"
+    class="mt-5 space-y-4"
+  >
+    <div>
+      <label class="block text-sm font-medium text-gray-700">
+        New Password
+      </label>
+      <input
+        type="password"
+        [(ngModel)]="password"
+        name="password"
+        required
+        class="block w-full px-4 py-2 mt-1 border rounded-md focus:border-black-300"
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700">
+        Confirm Password
+      </label>
+      <input
+        type="password"
+        [(ngModel)]="password2"
+        name="password"
+        required
+        class="block w-full px-4 py-2 mt-1 border rounded-md focus:border-black-300"
+      />
+    </div>
+
+    <div class="flex justify-center items-center mt-4">
+      <button
+        type="submit"
+        class="w-50 py-2 bg-appie-blue text-white rounded-full hover:bg-green-700"
+        [disabled]="updatePasswordPendingState != 0"
+      >
+        @if (updatePasswordPendingState != 1) { Update Password } @else {
+        Updating... }
+      </button>
+    </div>
+  </form>
 </div>

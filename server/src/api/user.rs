@@ -100,6 +100,7 @@ async fn patch_user(
                 request_body.name.as_deref(),
                 request_body.nickname.as_ref().map(|x| x.as_deref()),
                 request_body.email.as_ref().map(|x| x.as_deref()),
+                request_body.password.as_deref(),
                 request_body.rights,
                 None,
             )
@@ -150,7 +151,7 @@ async fn patch_user_profile_picture(
     if auth_ext.rights >= Rights::Admin || auth_ext.id == id {
         state
             .user_manager
-            .update_user(id, None, None, None, None, Some(&bytes))
+            .update_user(id, None, None, None, None, None, Some(&bytes))
             .await
             .map_err(|err| {
                 error!("failed to update user profile picture: {}", err);
