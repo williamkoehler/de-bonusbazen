@@ -3,11 +3,10 @@ import { RouterLink } from "@angular/router";
 import { AccountService } from '../../services/account.service';
 
 @Component({
-  selector: 'app-nav-bar',
-  standalone: true,
-  imports: [RouterLink],
-  templateUrl: './nav-bar.component.html',
-  styleUrl: './nav-bar.component.scss'
+    selector: 'app-nav-bar',
+    imports: [RouterLink],
+    templateUrl: './nav-bar.component.html',
+    styleUrl: './nav-bar.component.scss'
 })
 export class NavBarComponent {
     get isLoggedIn(): boolean {

@@ -4,7 +4,6 @@ import moment from 'moment';
 
 @Component({
     selector: 'app-blog',
-    standalone: true,
     imports: [],
     templateUrl: './blog.page.component.html',
     styleUrl: './blog.page.component.scss'

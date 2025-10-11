@@ -4,7 +4,6 @@ import { User, UserRights } from '../../services/models/user';
 
 @Component({
     selector: 'app-about',
-    standalone: true,
     imports: [],
     templateUrl: './about.page.component.html',
     styleUrl: './about.page.component.scss'

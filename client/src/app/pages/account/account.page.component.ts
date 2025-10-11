@@ -7,7 +7,6 @@ import { UserService } from '../../services/user.service';
 
 @Component({
     selector: 'app-account-page',
-    standalone: true,
     imports: [],
     templateUrl: './account.page.component.html',
     styleUrl: './account.page.component.scss'

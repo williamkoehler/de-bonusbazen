@@ -7,7 +7,6 @@ import { InvalidNameOrPasswordServiceError } from '../../services/errors';
 
 @Component({
     selector: 'app-login-page',
-    standalone: true,
     imports: [
         FormsModule
     ],

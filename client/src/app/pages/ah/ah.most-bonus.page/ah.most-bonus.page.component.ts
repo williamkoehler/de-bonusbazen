@@ -4,7 +4,6 @@ import moment from 'moment';
 
 @Component({
     selector: 'app-ah-most-bonus-page',
-    standalone: true,
     imports: [],
     templateUrl: './ah.most-bonus.page.component.html',
     styleUrl: './ah.most-bonus.page.component.scss'
