@@ -123,7 +123,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let ah_refresh_cron = jobs_config
                 .ah_refresh_cron
-                .unwrap_or_else(|| "0 */6 * * * *".to_string()); // Default: every six hours
+                .unwrap_or_else(|| "0 0 */6 * * *".to_string()); // Default: every six hours
             job_scheduler
                 .add(tokio_cron_scheduler::Job::new_async(
                     ah_refresh_cron,
