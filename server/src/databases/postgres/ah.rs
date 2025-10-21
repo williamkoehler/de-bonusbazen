@@ -46,7 +46,7 @@ impl super::PostgresDb {
         let mut products = Vec::new();
 
         let mut rows = 
-            sqlx::query("SELECT id, data FROM ah_products WHERE data::jsonb ? 'price_before_bonus' AND data::jsonb ? 'price' ORDER BY (cast(data::jsonb -> 'price_before_bonus' as real) - cast(data::jsonb -> 'price' as real)) DESC LIMIT 40")
+            sqlx::query("SELECT id, data FROM ah_products WHERE data::jsonb ? 'price_before_bonus' AND data::jsonb ? 'price' ORDER BY (cast(data::jsonb -> 'price_before_bonus' as real) / cast(data::jsonb -> 'price' as real)) DESC LIMIT 40")
                 .fetch(&self.pool);
         while let Some(row) = rows
             .try_next()
