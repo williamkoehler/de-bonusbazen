@@ -37,10 +37,10 @@ interface Error {
     styleUrl: './register.page.component.scss'
 })
 export class RegisterPageComponent implements OnInit {
-    name: string = 'Williama';
-    nickname: string = 'kjaef';
-    email: string = 'abc@abc.com';
-    password: string = 'akjfheakljehfk';
+    name: string = '';
+    nickname: string = '';
+    email: string = '';
+    password: string = '';
 
     loading: boolean = false;
     message?: string;
