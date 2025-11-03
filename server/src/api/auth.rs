@@ -1,5 +1,5 @@
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
@@ -101,6 +101,16 @@ pub async fn post_login(
         email: user.email().map(|x| x.to_string()),
         rights: user.rights(),
     }))
+}
+
+pub async fn get_check(
+    Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
+) -> Result<(), StatusCode> {
+    if auth_ext.rights > Rights::Unauthenticated {
+        Ok(())
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
 }
 
 #[derive(Debug, Deserialize)]

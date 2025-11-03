@@ -71,24 +71,29 @@ export class AccountService {
         this.readStore();
     }
 
-    readStore() {
+    private async readStore() {
         const accountStore = store.namespace('account');
 
         const token = accountStore('token');
         if (typeof token !== 'string')
             return;
 
-        this._info = {
-            token: token,
-            id: accountStore('id'),
-            name: accountStore('name'),
-            nickname: accountStore('nickname'),
-            email: accountStore('email'),
-            rights: accountStore('rights'),
+        if (await this.check(token)) {
+            this._info = {
+                token: token,
+                id: accountStore('id'),
+                name: accountStore('name'),
+                nickname: accountStore('nickname'),
+                email: accountStore('email'),
+                rights: accountStore('rights'),
+            }
+        }
+        else {
+            accountStore.remove('token')
         }
     }
 
-    writeStore() {
+    private writeStore() {
         const accountStore = store.namespace('account');
 
         if (this._info) {
@@ -102,6 +107,31 @@ export class AccountService {
         else {
             accountStore.clear();
         }
+    }
+
+    async check(token?: string): Promise<boolean> {
+        token ??= this.token;
+        if (!token)
+            return false;
+
+        return await new Promise((resolve, reject) => {
+            this.httpClient.get('/api/check', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }).subscribe({
+                next: _ => {
+                    resolve(true);
+                },
+                error: (err: HttpErrorResponse) => {
+                    if (err.status === HttpStatusCode.Unauthorized) {
+                        resolve(false);
+                    }
+                    else
+                        reject(err);
+                }
+            });
+        });
     }
 
     async login(name: string, password: string) {

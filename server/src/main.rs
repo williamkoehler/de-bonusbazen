@@ -166,6 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .nest("/users", api::user::router())
             .nest("/posts", api::post::router())
             .nest("/ah", api::ah::router())
+            .route("/check", get(api::auth::get_check))
             .layer(axum::middleware::from_fn_with_state(
                 state.clone(),
                 api::middleware::auth::auth_middleware,
