@@ -33,7 +33,7 @@ pub async fn auth_middleware(
             };
 
             let claims =
-                crate::users::helper::verify_jwt(token, &state.config.jwt_authentication_secret)
+                crate::users::helper::verify_jwt(token, &state.config.jwt.authentication_secret)
                     .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
             AuthExtension {

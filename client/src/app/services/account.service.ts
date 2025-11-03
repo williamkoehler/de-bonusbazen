@@ -1,8 +1,12 @@
 import { HttpClient, HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { RawLoginRequestBody, RawLoginResponseBody, RawRegisterRequestBody, RawUpdateRequestBody } from './models/account';
-import { InternalServiceError, InvalidNameOrPasswordServiceError } from './errors';
+import { RawLoginRequestBody, RawLoginResponseBody, RawReCaptchaResponseBody, RawRegisterRequestBody, RawUpdateRequestBody } from './models/account';
+import { errorFromReason, handleError, InternalServiceError } from './errors';
 import store from 'store2';
+
+const RECAPTCHA_SCRIPT_ID = 'recaptcha-script';
+
+declare const grecaptcha: any;
 
 interface AccountInfo {
     token: string;
@@ -18,6 +22,7 @@ interface AccountInfo {
 })
 export class AccountService {
     _info?: AccountInfo;
+    _recaptchaSiteKey?: string;
 
     get isLoggedIn(): boolean {
         return !!this._info;
@@ -45,6 +50,21 @@ export class AccountService {
 
     get rights(): string | undefined {
         return this._info?.rights;
+    }
+
+    get httpHeaders(): Record<string, string> {
+        if (this.token !== undefined) {
+            return {
+                Authorization: `Bearer ${this.token}`
+            }
+        }
+        else {
+            return {};
+        }
+    }
+
+    get hasAdminRights(): boolean {
+        return this.rights === 'admin' || this.rights === 'member' || this.rights === 'maintainer';
     }
 
     constructor(private httpClient: HttpClient) {
@@ -107,14 +127,7 @@ export class AccountService {
                     resolve();
                 },
                 error: (err: HttpErrorResponse) => {
-                    switch (err.status) {
-                        case HttpStatusCode.Unauthorized:
-                            reject(new InvalidNameOrPasswordServiceError());
-                            break;
-                        default:
-                            reject(new InternalServiceError(err.message));
-                            break;
-                    }
+                    reject(handleError(err));
                 }
             });
         });
@@ -125,9 +138,64 @@ export class AccountService {
         this.writeStore();
     }
 
+    private async prepare() {
+        // ReCaptcha script already loaded
+        if (document.getElementById(RECAPTCHA_SCRIPT_ID) && this._recaptchaSiteKey) {
+            return;
+        }
+
+        const siteKeyPromise = new Promise<void>(async (resolve, reject) => {
+            this.httpClient.get<RawReCaptchaResponseBody>('/api/recaptcha', {}).subscribe({
+                next: body => {
+                    this._recaptchaSiteKey = body.site_key;
+
+                    resolve();
+                },
+                error: (err: HttpErrorResponse) => {
+                    console.error('Failed to get reCAPTCHA site key: ', err);
+                    reject(new InternalServiceError('Failed to get reCAPTCHA site key: ' + err.message));
+                }
+            });
+        });
+
+        await siteKeyPromise;
+
+        const script = document.createElement('script');
+        script.id = RECAPTCHA_SCRIPT_ID;
+        script.src = `https://www.google.com/recaptcha/api.js?render=${this._recaptchaSiteKey}`;
+        script.async = true;
+        script.defer = true;
+
+        const loadPromise = new Promise<void>(async (resolve, reject) => {
+            script.onload = () => resolve();
+            script.onerror = () => reject('Failed to load reCAPTCHA script');
+        });
+
+        document.head.appendChild(script);
+
+        await loadPromise;
+    }
+
     async register(name: string, nickname: string, email: string, password: string) {
+        await this.prepare();
+
+        const recaptcha = await new Promise<string>((resolve, reject) => {
+            grecaptcha.ready(() => {
+                grecaptcha.execute(this._recaptchaSiteKey, { action: 'submit' })
+                    .then(async (token: any) => {
+                        console.log("successfully loaded reCAPTCHA token: ", token);
+                        resolve(token);
+                    }).
+                    catch((err: any) => {
+                        console.log("failed to load reCAPTCHA token: ", err);
+                        reject(new InternalServiceError('Failed to load reCAPTCHA token.'));
+                    });
+            });
+        });
+
         return new Promise<void>((resolve, reject) => {
             const requestBody: RawRegisterRequestBody = {
+                recaptcha: recaptcha,
                 name: name,
                 nickname: nickname,
                 email: email,
@@ -138,8 +206,8 @@ export class AccountService {
                 next: _ => {
                     resolve();
                 },
-                error: err => {
-                    reject(err);
+                error: (err: HttpErrorResponse) => {
+                    reject(handleError(err));
                 }
             });
         });

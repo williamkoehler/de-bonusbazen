@@ -5,57 +5,106 @@
 
   <form (ngSubmit)="onRegisterClick()" #accountForm="ngForm" class="space-y-4">
     <div>
-      <label class="block text-sm font-medium text-gray-700">Name</label>
+      @let nameError = error?.flaggedFields?.includes('name');
+      <label
+        class="block text-sm font-medium text-gray-700"
+        [class]="nameError ? ['text-red-500'] : []"
+      >
+        Name
+      </label>
       <input
         type="text"
         [(ngModel)]="name"
         name="name"
+        autocomplete="username"
         required
+        [disabled]="loading"
         class="mt-1 block w-full px-4 py-2 border rounded-md focus:border-black-300"
+        [class]="nameError ? ['text-red-500', 'border-red-500'] : []"
       />
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-700">Nickname</label>
+      @let nicknameError = error?.flaggedFields?.includes('nickname');
+      <label
+        class="block text-sm font-medium text-gray-700"
+        [class]="nicknameError ? ['text-red-500'] : []"
+      >
+        Nickname
+      </label>
       <input
         type="text"
         [(ngModel)]="nickname"
         name="nickname"
+        autocomplete="nickname"
         required
+        [disabled]="loading"
         class="mt-1 block w-full px-4 py-2 border rounded-md focus:border-black-300"
+        [class]="nicknameError ? ['text-red-500', 'border-red-500'] : []"
       />
     </div>
 
     <div class="mt-8">
-      <label class="block text-sm font-medium text-gray-700">E-Mail</label>
+      @let emailError = error?.flaggedFields?.includes('email');
+      <label
+        class="block text-sm font-medium text-gray-700"
+        [class]="emailError ? ['text-red-500'] : []"
+      >
+        E-Mail
+      </label>
       <input
         type="email"
         [(ngModel)]="email"
         name="email"
+        autocomplete="email"
         required
+        [disabled]="loading"
         class="mt-1 block w-full px-4 py-2 border rounded-md focus:border-black-300"
+        [class]="emailError ? ['text-red-500', 'border-red-500'] : []"
       />
     </div>
 
     <div class="mt-8">
-      <label class="block text-sm font-medium text-gray-700">Password</label>
+      @let passwordError = error?.flaggedFields?.includes('password');
+      <label
+        class="block text-sm font-medium text-gray-700"
+        [class]="passwordError ? ['text-red-500'] : []"
+      >
+        Password
+      </label>
       <input
         type="password"
         [(ngModel)]="password"
         name="password"
+        autocomplete="new-password"
         required
+        [disabled]="loading"
         class="mt-1 block w-full px-4 py-2 border rounded-md focus:border-black-300"
+        [class]="passwordError ? ['text-red-500', 'border-red-500'] : []"
       />
     </div>
 
-    <div class="text-sm text-red-500 text-wrap mt-5" [innerText]="error"></div>
+    @if(error) {
+    <div
+      class="text-sm text-red-500 text-wrap m-5 px-4 py-2 border bg-red-500/15 rounded-md"
+      [innerText]="error.message"
+    ></div>
+    } @if(message) {
+    <div
+      class="text-sm text-green-500 text-wrap m-5 px-4 py-2 border bg-green-500/15 rounded-md"
+      [innerText]="message"
+    ></div>
+    }
 
     <div class="flex justify-center mt-5">
       <button
         type="submit"
+        [disabled]="loading"
         class="w-30 py-2 bg-appie-blue text-white rounded-full hover:bg-green-700"
       >
-        Register
+        @if(loading) {
+        <spinner class="mr-1" />
+        } Register
       </button>
     </div>
   </form>

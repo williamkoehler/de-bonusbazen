@@ -24,6 +24,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Error, Debug)]
 pub enum ErrorAddUser {
+    #[error("internal error: {msg}")]
+    InternalError { msg: String },
+    
     #[error("database error: {inner}")]
     DatabaseError {
         inner: crate::databases::postgres::error::ErrorAddUser,
@@ -35,10 +38,16 @@ pub enum ErrorAddUser {
     #[error("name is taken: {name}")]
     NameIsTaken { name: String },
 
+    #[error("invalid nickname: {nickname}")]
+    InvalidNickname { nickname: String },
+
     #[error("invalid email: {email}")]
     InvalidEMail { email: String },
 
     #[error("email is taken: {email}")]
     EMailIsTaken { email: String },
+
+    #[error("invalid password")]
+    InvalidPassword,
 }
 pub type ResultAddUser<T> = std::result::Result<T, ErrorAddUser>;

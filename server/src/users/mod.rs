@@ -46,7 +46,10 @@ impl UserManager {
             .database
             .users(include_members, include_normal)
             .await
-            .map_err(|err| error::Error::DatabaseError { inner: err })?;
+            .map_err(|err| {
+                error!("failed to get users: {}", err);
+                error::Error::DatabaseError { inner: err }
+            })?;
 
         Ok(raw_users
             .into_iter()
@@ -55,11 +58,10 @@ impl UserManager {
     }
 
     pub async fn user(&self, id: i32) -> error::Result<model::User> {
-        let raw_user = self
-            .database
-            .user(id)
-            .await
-            .map_err(|err| error::Error::DatabaseError { inner: err })?;
+        let raw_user = self.database.user(id).await.map_err(|err| {
+            error!(id = id, "failed to get user: {}", err);
+            error::Error::DatabaseError { inner: err }
+        })?;
 
         Ok(raw_user.into())
     }
@@ -99,6 +101,54 @@ impl UserManager {
         password: &str,
         rights: model::Rights,
     ) -> error::ResultAddUser<model::User> {
+        // Check name, nickname, email and password content
+        {
+            // Check name
+            {
+                let name_regex = regex::Regex::new(r"^(?:\p{L}|[_])+$").map_err(|_| {
+                    error::ErrorAddUser::InternalError {
+                        msg: "invalid name regex".to_string(),
+                    }
+                })?;
+                if !name_regex.is_match(name) {
+                    return Err(error::ErrorAddUser::InvalidName {
+                        name: name.to_string(),
+                    });
+                }
+            }
+
+            // Check nickname
+            if let Some(nickname) = nickname {
+                let nickname_regex = regex::Regex::new(r"^(?:\p{L}|[ _])+$").map_err(|_| {
+                    error::ErrorAddUser::InternalError {
+                        msg: "invalid nickname regex".to_string(),
+                    }
+                })?;
+                if !nickname_regex.is_match(nickname) {
+                    return Err(error::ErrorAddUser::InvalidNickname {
+                        nickname: nickname.to_string(),
+                    });
+                }
+            }
+
+            // Check email
+            if let Some(email) = email {
+                let email_regex = regex::Regex::new(
+                    r"^(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*)@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])$")
+                    .map_err(|_| error::ErrorAddUser::InternalError { msg: "invalid email regex".to_string() })?;
+                if !email_regex.is_match(email) {
+                    return Err(error::ErrorAddUser::InvalidEMail {
+                        email: email.to_string(),
+                    });
+                }
+            }
+
+            // Check password
+            if password.len() < 8 {
+                return Err(error::ErrorAddUser::InvalidPassword);
+            }
+        }
+
         let hash = helper::generate_hash(password);
 
         let raw_user = self

@@ -1,6 +1,9 @@
 @import "../node_modules/bootstrap-icons/font/bootstrap-icons.css";
 @import 'variables';
 
+
+@import "tailwindcss";
+
 .bg-appie-blue {
     background-color: $appie-blue;
 }
@@ -9,14 +12,15 @@
     background-color: $groente-green;
 }
 
-
-@import "tailwindcss";
-
 * {
     font-family: "Jost", sans-serif;
     font-optical-sizing: auto;
 
     transition: color 0.3s ease-in-out, background-color 0.3s ease-in-out, border-color 0.1s ease-in-out;
+}
+
+*:focus-visible {
+    outline: unset;
 }
 
 html {

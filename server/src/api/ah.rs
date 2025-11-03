@@ -17,7 +17,7 @@ struct Pagination {
 async fn get_products(
     State(state): State<ArcState>,
     Query(pagination): Query<Pagination>,
-) -> Result<Json<Vec<crate::misc::ah::model::Product>>, StatusCode> {
+) -> Result<Json<Vec<crate::misc::ah::model::Product>>, (StatusCode, Json<super::ErrorBody>)> {
     let pagination = if let (Some(page), Some(size)) = (pagination.page, pagination.size) {
         Some((page, size))
     } else {
@@ -30,7 +30,7 @@ async fn get_products(
         .await
         .map_err(|err| {
             error!("failed to get products: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            super::ErrorReason::InternalError.into()
         })?;
 
     Ok(Json(products.collect::<Vec<_>>()))
@@ -38,14 +38,14 @@ async fn get_products(
 
 async fn get_products_most_bonus(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<crate::misc::ah::model::Product>>, StatusCode> {
+) -> Result<Json<Vec<crate::misc::ah::model::Product>>, (StatusCode, Json<super::ErrorBody>)> {
     let products = state
         .ah_manager
         .ah_products_most_bonus()
         .await
         .map_err(|err| {
             error!("failed to get products with most bonus: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            super::ErrorReason::InternalError.into()
         })?;
 
     Ok(Json(products.collect::<Vec<_>>()))

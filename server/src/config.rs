@@ -14,6 +14,7 @@ pub struct ServerConfig {
     pub port: Option<u16>,
 
     pub jwt: ServerJwtConfig,
+    pub recaptcha: ServerReCaptchaConfig,
     // pub email: ServerEMailConfig,
 }
 
@@ -22,6 +23,12 @@ pub struct ServerJwtConfig {
     pub verification_secret: Option<String>,
     pub authentication_secret: Option<String>,
     pub expire: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ServerReCaptchaConfig {
+    pub secret_key: String,
+    pub site_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

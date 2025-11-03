@@ -10,6 +10,8 @@ mod config;
 mod state;
 pub use state::ArcState;
 
+use crate::services::recaptcha;
+
 mod databases;
 mod services;
 
@@ -51,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ah_service = services::ah::AhService::new()?;
     let ah_manager = misc::ah::AhManager::new(ah_service.clone(), postgres.clone());
 
-    // ah_manager.refresh_ah_products().await;
+    let recaptcha_service = recaptcha::ReCaptchaService::new(&config.server.recaptcha)?;
 
     let user_manager = users::UserManager::new(postgres.clone()).await?;
     let post_manager = posts::PostManager::new(postgres.clone()).await?;
@@ -65,6 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Services
         ah_service,
+        recaptcha_service,
 
         // Managers
         user_manager,
@@ -73,23 +76,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Global config
         config: std::sync::Arc::new(state::Config {
-            jwt_verification_secret: config.server.jwt.verification_secret.unwrap_or_else(|| {
-                rand::rng()
-                    .sample_iter(&rand::distr::Alphanumeric)
-                    .take(20)
-                    .map(char::from)
-                    .collect()
-            }),
-            jwt_authentication_secret: config.server.jwt.authentication_secret.unwrap_or_else(
-                || {
+            jwt: state::JwtConfig {
+                verification_secret: config.server.jwt.verification_secret.unwrap_or_else(|| {
                     rand::rng()
                         .sample_iter(&rand::distr::Alphanumeric)
                         .take(20)
                         .map(char::from)
                         .collect()
-                },
-            ),
-            jwt_expiry_time: config.server.jwt.expire.unwrap_or(432000 /* 5 days */),
+                }),
+                authentication_secret: config.server.jwt.authentication_secret.unwrap_or_else(
+                    || {
+                        rand::rng()
+                            .sample_iter(&rand::distr::Alphanumeric)
+                            .take(20)
+                            .map(char::from)
+                            .collect()
+                    },
+                ),
+                expiry_time: config.server.jwt.expire.unwrap_or(432000 /* 5 days */),
+            },
+            recaptcha: state::ReCaptchaConfig {
+                site_key: config.server.recaptcha.site_key,
+            },
         }),
     });
 
@@ -101,11 +109,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             None => true,
         };
         if needs_ah_refresh {
-            info!("refreshing AH products...");
-            state.ah_manager.refresh_ah_products().await;
-            if let Err(err) = state.redis.set_last_ah_refresh(chrono::Utc::now()).await {
-                error!("failed to update AH refresh time: {}", err);
-            }
+            let state = state.clone();
+
+            tokio::spawn(async move {
+                info!("refreshing AH products...");
+                state.ah_manager.refresh_ah_products().await;
+                if let Err(err) = state.redis.set_last_ah_refresh(chrono::Utc::now()).await {
+                    error!("failed to update AH refresh time: {}", err);
+                }
+            });
         } else {
             info!(
                 "AH products are up to date (last refresh: {})",
@@ -158,7 +170,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 state.clone(),
                 api::middleware::auth::auth_middleware,
             ))
-            .route("/login", post(api::auth::login))
+            .route("/recaptcha", get(api::auth::get_recaptcha))
+            .route("/login", post(api::auth::post_login))
             .route("/register", post(api::auth::post_register))
             .route("/register/{token}", get(api::auth::get_verify))
             .with_state(state),

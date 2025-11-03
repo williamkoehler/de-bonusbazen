@@ -8,8 +8,22 @@ use tracing::*;
 
 use crate::users::{helper::JwtClaims, model::Rights};
 
+#[derive(Debug, Serialize)]
+pub struct GetReCaptchaResponseBody {
+    site_key: String,
+}
+
+pub async fn get_recaptcha(
+    State(state): State<crate::ArcState>,
+) -> Result<Json<GetReCaptchaResponseBody>, StatusCode> {
+    Ok(Json(GetReCaptchaResponseBody {
+        site_key: state.config.recaptcha.site_key.clone(),
+    }))
+}
+
 #[derive(Debug, Deserialize)]
 pub struct PostLoginRequestBody {
+    // recaptcha: String,
     name: String,
     password: String,
 }
@@ -24,17 +38,34 @@ pub struct PostLoginResponseBody {
     rights: crate::users::model::Rights,
 }
 
-pub async fn login(
+pub async fn post_login(
     State(state): State<crate::ArcState>,
     Json(req_body): Json<PostLoginRequestBody>,
-) -> Result<Json<PostLoginResponseBody>, StatusCode> {
+) -> Result<Json<PostLoginResponseBody>, (StatusCode, Json<super::ErrorBody>)> {
+    // Verify ReCaptcha
+    // {
+    //     let recaptcha_valid = state
+    //         .recaptcha_service
+    //         .verify_token(&req_body.recaptcha)
+    //         .await
+    //         .map_err(|err| {
+    //             error!("failed to verify recaptcha token: {}", err);
+    //             StatusCode::INTERNAL_SERVER_ERROR
+    //         })?;
+
+    //     if !recaptcha_valid {
+    //         warn!(name = req_body.name, "invalid recaptcha token");
+    //         return Err(StatusCode::UNAUTHORIZED);
+    //     }
+    // }
+
     let (user, hash) = state
         .user_manager
         .user_and_hash_by_name(&req_body.name)
         .await
         .map_err(|err| {
             warn!(name = req_body.name, "user does not exist: {}", err);
-            StatusCode::UNAUTHORIZED
+            super::ErrorReason::Unauthenticated.into()
         })?;
 
     if user.rights() == Rights::Unauthenticated {
@@ -42,7 +73,7 @@ pub async fn login(
             name = req_body.name,
             "user tried to login without verifying email"
         );
-        return Err(StatusCode::UNAUTHORIZED);
+        return Err(super::ErrorReason::Unverified.into());
     }
 
     if !crate::users::helper::verify_hash(&hash, &req_body.password) {
@@ -50,17 +81,17 @@ pub async fn login(
             name = req_body.name,
             "user tried to login with invalid password"
         );
-        return Err(StatusCode::UNAUTHORIZED);
+        return Err(super::ErrorReason::Unauthenticated.into());
     }
 
     let token = crate::users::helper::generate_jwt(
         &user,
-        state.config.jwt_expiry_time,
-        &state.config.jwt_authentication_secret,
+        state.config.jwt.expiry_time,
+        &state.config.jwt.authentication_secret,
     )
     .map_err(|err| {
         error!(id = user.id(), "failed to generate jwt: {}", err);
-        StatusCode::INTERNAL_SERVER_ERROR
+        super::ErrorReason::JwtGenerationFailed.into()
     })?;
 
     Ok(Json(PostLoginResponseBody {
@@ -74,6 +105,7 @@ pub async fn login(
 
 #[derive(Debug, Deserialize)]
 pub struct PostRegisterRequestBody {
+    recaptcha: String,
     name: String,
     nickname: Option<String>,
     email: String,
@@ -83,7 +115,25 @@ pub struct PostRegisterRequestBody {
 pub async fn post_register(
     State(state): State<crate::ArcState>,
     Json(req_body): Json<PostRegisterRequestBody>,
-) -> Result<(), StatusCode> {
+) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
+    // Verify ReCaptcha
+    {
+        let recaptcha_valid = state
+            .recaptcha_service
+            .verify_token(&req_body.recaptcha)
+            .await
+            .map_err(|err| {
+                error!("failed to verify recaptcha token: {}", err);
+                super::ErrorReason::ReCaptchaVerificationFailed.into()
+            })?;
+
+        if !recaptcha_valid {
+            warn!(name = req_body.name, "invalid recaptcha token");
+            #[cfg(not(debug_assertions))]
+            return Err(super::ErrorReason::InvalidReCaptcha.into());
+        }
+    }
+
     let user = state
         .user_manager
         .add_user(
@@ -96,7 +146,24 @@ pub async fn post_register(
         .await
         .map_err(|err| {
             warn!(name = req_body.name, "failed to add user: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            match err {
+                crate::users::error::ErrorAddUser::InvalidName { .. } => {
+                    super::ErrorReason::InvalidName.into()
+                }
+                crate::users::error::ErrorAddUser::NameIsTaken { .. } => {
+                    super::ErrorReason::NameIsTaken.into()
+                }
+                crate::users::error::ErrorAddUser::InvalidEMail { .. } => {
+                    super::ErrorReason::InvalidEmail.into()
+                }
+                crate::users::error::ErrorAddUser::EMailIsTaken { .. } => {
+                    super::ErrorReason::EmailIsTaken.into()
+                }
+                crate::users::error::ErrorAddUser::InvalidNickname { .. } => {
+                    super::ErrorReason::InvalidNickname.into()
+                }
+                _ => super::ErrorReason::InternalError.into(),
+            }
         })?;
 
     // Add verification
@@ -106,7 +173,7 @@ pub async fn post_register(
         .await
         .map_err(|err| {
             warn!(id = user.id(), "failed to add verification: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
+            super::ErrorReason::InternalError.into()
         })?;
 
     let token = {
@@ -114,7 +181,7 @@ pub async fn post_register(
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|err| {
                 error!(id = user.id(), "time went backwards: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR
+                super::ErrorReason::InternalError.into()
             })?
             .as_secs();
 
@@ -127,14 +194,14 @@ pub async fn post_register(
         jsonwebtoken::encode(
             &jsonwebtoken::Header::default(),
             &claims,
-            &jsonwebtoken::EncodingKey::from_secret(state.config.jwt_verification_secret.as_ref()),
+            &jsonwebtoken::EncodingKey::from_secret(state.config.jwt.verification_secret.as_ref()),
         )
         .map_err(|err| {
             error!(
                 id = user.id(),
                 "failed to generate verification jwt: {}", err
             );
-            StatusCode::INTERNAL_SERVER_ERROR
+            super::ErrorReason::InternalError.into()
         })?
     };
 
@@ -151,7 +218,7 @@ pub async fn get_verify(
     let claims = {
         jsonwebtoken::decode::<JwtClaims>(
             &token,
-            &jsonwebtoken::DecodingKey::from_secret(state.config.jwt_verification_secret.as_ref()),
+            &jsonwebtoken::DecodingKey::from_secret(state.config.jwt.verification_secret.as_ref()),
             &jsonwebtoken::Validation::default(),
         )
         .map_err(|_| StatusCode::UNAUTHORIZED)?

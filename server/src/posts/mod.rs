@@ -15,12 +15,15 @@ impl PostManager {
         Ok(Self { database })
     }
 
-    pub async fn posts(&self) -> error::Result<Vec<model::Post>> {
+    pub async fn posts(&self, show_hidden: bool) -> error::Result<Vec<model::Post>> {
         let raw_posts = self
             .database
-            .posts(true, true, true)
+            .posts(show_hidden, show_hidden, true)
             .await
-            .map_err(|err| error::Error::DatabaseError { inner: err })?;
+            .map_err(|err| {
+                error!("failed to get posts: {}", err);
+                error::Error::DatabaseError { inner: err }
+            })?;
 
         Ok(raw_posts
             .into_iter()
@@ -28,12 +31,11 @@ impl PostManager {
             .collect())
     }
 
-    pub async fn post(&self, id: i32) -> error::Result<model::Post> {
-        let raw_post = self
-            .database
-            .post_and_body(id)
-            .await
-            .map_err(|err| error::Error::DatabaseError { inner: err })?;
+    pub async fn post(&self, id: i32, show_hidden: bool) -> error::Result<model::Post> {
+        let raw_post = self.database.post_and_body(id, show_hidden, show_hidden, true).await.map_err(|err| {
+            error!(id = id, "failed to get post: {}", err);
+            error::Error::DatabaseError { inner: err }
+        })?;
 
         Ok(raw_post.into())
     }

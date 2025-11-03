@@ -30,7 +30,7 @@ struct PatchUserRequestBody {
 async fn get_users(
     State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
-) -> Result<Json<Vec<crate::users::model::User>>, StatusCode> {
+) -> Result<Json<Vec<crate::users::model::User>>, (StatusCode, Json<super::ErrorBody>)> {
     let mut include_normal = false;
 
     if auth_ext.rights >= Rights::Normal {
@@ -41,10 +41,7 @@ async fn get_users(
         .user_manager
         .users(true, include_normal)
         .await
-        .map_err(|err| {
-            error!("failed to get users: {}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(|_| super::ErrorReason::InternalError.into())?;
 
     Ok(Json(users))
 }
@@ -52,12 +49,12 @@ async fn get_users(
 async fn get_user(
     State(state): State<crate::ArcState>,
     Path(id): Path<i32>,
-) -> Result<Json<crate::users::model::User>, StatusCode> {
+) -> Result<Json<crate::users::model::User>, (StatusCode, Json<super::ErrorBody>)> {
     let user = state
         .user_manager
         .user(id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_| super::ErrorReason::InternalError.into())?;
 
     Ok(Json(user))
 }
@@ -66,7 +63,7 @@ async fn post_user(
     State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Json(request_body): Json<PostUserRequestBody>,
-) -> Result<Json<crate::users::model::User>, StatusCode> {
+) -> Result<Json<crate::users::model::User>, (StatusCode, Json<super::ErrorBody>)> {
     if auth_ext.rights >= Rights::Admin {
         let user = state
             .user_manager
@@ -78,11 +75,11 @@ async fn post_user(
                 request_body.rights,
             )
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(|_| super::ErrorReason::InternalError.into())?;
 
         Ok(Json(user))
     } else {
-        Err(StatusCode::FORBIDDEN)
+        Err(super::ErrorReason::Unauthorized.into())
     }
 }
 
@@ -91,7 +88,7 @@ async fn patch_user(
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
     Json(request_body): Json<PatchUserRequestBody>,
-) -> Result<(), StatusCode> {
+) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
     if auth_ext.rights >= Rights::Admin || auth_ext.id == id {
         state
             .user_manager
@@ -107,12 +104,12 @@ async fn patch_user(
             .await
             .map_err(|err| {
                 error!("failed to update user: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR
+                super::ErrorReason::InternalError.into()
             })?;
 
         Ok(())
     } else {
-        Err(StatusCode::FORBIDDEN)
+        Err(super::ErrorReason::Unauthorized.into())
     }
 }
 
@@ -147,7 +144,7 @@ async fn patch_user_profile_picture(
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
     bytes: axum::body::Bytes,
-) -> Result<(), StatusCode> {
+) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
     if auth_ext.rights >= Rights::Admin || auth_ext.id == id {
         state
             .user_manager
@@ -155,11 +152,11 @@ async fn patch_user_profile_picture(
             .await
             .map_err(|err| {
                 error!("failed to update user profile picture: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR
+                super::ErrorReason::InternalError.into()
             })?;
         Ok(())
     } else {
-        Err(StatusCode::FORBIDDEN)
+        Err(super::ErrorReason::Unauthorized.into())
     }
 }
 
@@ -167,17 +164,17 @@ async fn delete_user(
     State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
-) -> Result<(), StatusCode> {
+) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
     if auth_ext.rights >= Rights::Admin {
         state
             .user_manager
             .remove_user(id)
             .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            .map_err(|_| super::ErrorReason::InternalError.into())?;
 
         Ok(())
     } else {
-        Err(StatusCode::FORBIDDEN)
+        Err(super::ErrorReason::Unauthorized.into())
     }
 }
 

@@ -10,6 +10,7 @@ pub struct State {
 
     pub ah_service: services::ah::AhService,
     pub ah_manager: misc::ah::AhManager,
+    pub recaptcha_service: services::recaptcha::ReCaptchaService,
 
     pub user_manager: users::UserManager,
     pub post_manager: posts::PostManager,
@@ -18,7 +19,16 @@ pub struct State {
 }
 
 pub struct Config {
-    pub jwt_expiry_time: u64,
-    pub jwt_authentication_secret: String,
-    pub jwt_verification_secret: String,
+    pub jwt: JwtConfig,
+    pub recaptcha: ReCaptchaConfig,
+}
+
+pub struct JwtConfig {
+    pub expiry_time: u64,
+    pub authentication_secret: String,
+    pub verification_secret: String,
+}
+
+pub struct ReCaptchaConfig {
+    pub site_key: String,
 }

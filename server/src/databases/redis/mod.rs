@@ -1,3 +1,5 @@
+use tracing::*;
+
 pub mod error;
 
 pub mod users;
@@ -10,6 +12,8 @@ pub struct RedisDb {
 
 impl RedisDb {
     pub async fn new(config: &crate::config::RedisDbConfig) -> error::ResultNew<RedisDb> {
+        info!("connecting to redis database...");
+        
         let client = redis::Client::open(config.url.as_str())
             .map_err(|err| error::ErrorNew::RedisError { inner: err })?;
         let multiplexed_connection = client

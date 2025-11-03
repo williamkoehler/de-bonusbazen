@@ -31,7 +31,7 @@ impl super::PostgresDb {
         let mut posts = Vec::new();
 
         let mut query_builder = sqlx::QueryBuilder::new(
-            "SELECT id, created_at, updated_at, author, title, SUBSTRING(body, 0, 600) as extract, metadata FROM posts WHERE ",
+            "SELECT id, visibility, created_at, updated_at, author, title, SUBSTRING(body, 0, 600) as extract, metadata FROM posts WHERE ",
         );
 
         query_builder.push("visibility in (");
@@ -62,6 +62,10 @@ impl super::PostgresDb {
                 .try_get("id")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
+            let visibility: model::RawPostVisibility = row
+                .try_get("visibility")
+                .map_err(|err| error::Error::SqlxError { inner: err })?;
+
             let created_at: DateTime<Utc> = row
                 .try_get("created_at")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
@@ -88,7 +92,7 @@ impl super::PostgresDb {
 
             posts.push(model::RawPost {
                 id,
-                visibility: model::RawPostVisibility::Visible,
+                visibility,
                 created_at,
                 updated_at,
                 author,
@@ -101,17 +105,50 @@ impl super::PostgresDb {
         Ok(posts)
     }
 
-    pub async fn post_and_body(&self, id: i32) -> error::Result<(model::RawPost, String)> {
-        let row = sqlx::query(
-            "SELECT id, visibility, created_at, updated_at, author, title, metadata, body FROM posts WHERE id = $1",
-        )
-        .bind(id)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|err| error::Error::SqlxError { inner: err })?;
+    pub async fn post_and_body(
+        &self,
+        id: i32,
+        include_hidden: bool,
+        include_draft: bool,
+        include_visible: bool,
+    ) -> error::Result<(model::RawPost, String)> {
+        let mut query_builder = sqlx::QueryBuilder::new(
+            "SELECT id, visibility, created_at, updated_at, author, title, metadata, body FROM posts WHERE ",
+        );
+
+        query_builder.push("id = ");
+        query_builder.push_bind(id);
+        query_builder.push(" AND ");
+
+        query_builder.push("visibility in (");
+        {
+            let mut separated = query_builder.separated(", ");
+
+            if include_hidden {
+                separated.push_bind(RawPostVisibility::Hidden);
+            }
+            if include_draft {
+                separated.push_bind(RawPostVisibility::Draft);
+            }
+            if include_visible {
+                separated.push_bind(RawPostVisibility::Visible);
+            }
+        }
+        query_builder.push(")");
+
+        let query = query_builder.build();
+
+        let row = query
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
 
         let id: i32 = row
             .try_get("id")
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        let visibility: model::RawPostVisibility = row
+            .try_get("visibility")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
         let created_at: DateTime<Utc> = row
@@ -120,10 +157,6 @@ impl super::PostgresDb {
 
         let updated_at: DateTime<Utc> = row
             .try_get("updated_at")
-            .map_err(|err| error::Error::SqlxError { inner: err })?;
-
-        let visibility: model::RawPostVisibility = row
-            .try_get("visibility")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
         let author: i32 = row
@@ -222,7 +255,7 @@ impl super::PostgresDb {
         }
         if let Some(body) = body {
             separated.push("body = ");
-            separated.push_bind_unseparated(hex::encode(body));
+            separated.push_bind_unseparated(body);
         }
 
         if title.is_some() || body.is_some() {

@@ -17,6 +17,8 @@ pub struct PostgresDb {
 
 impl PostgresDb {
     pub async fn new(config: &crate::config::PostgresDbConfig) -> error::ResultNew<PostgresDb> {
+        info!("connecting to postgres database...");
+        
         let pool = sqlx::postgres::PgPoolOptions::new()
             .max_connections(config.pool_max.unwrap_or(5))
             .connect(&config.url)

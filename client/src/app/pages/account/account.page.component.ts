@@ -136,7 +136,7 @@ export class AccountPageComponent implements OnInit {
                     this.updatePasswordPendingState = PendingState.None;
                     this.changeDetectorRef.detectChanges();
                 }, 1000);
-            } catch (e) {
+            } catch {
                 this.updatePasswordPendingState = PendingState.Error;
                 this.changeDetectorRef.detectChanges();
             }

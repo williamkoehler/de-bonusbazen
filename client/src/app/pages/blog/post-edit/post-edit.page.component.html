@@ -1,0 +1,125 @@
+<div
+  class="md:max-w-4xl h-full md:h-auto p-6 pt-20 md:pt-6 mx-auto md:mt-24 bg-white md:rounded-xl shadow-sm shadow-black-100/50"
+>
+  @if(post) {
+  <form (ngSubmit)="onSaveClick()" #accountForm="ngForm" class="space-y-4">
+    <input
+      [(ngModel)]="title"
+      name="title"
+      placeholder="PUT TITLE HERE"
+      (input)="updatedTitle = true"
+      [disabled]="loading"
+      class="w-full text-4xl font-extrabold text-center mb-4 px-5 placeholder-gray-500 focus:underline decoration-dotted"
+    />
+
+    <div class="flex justify-between">
+      <div>
+        @if(post.createdAt) {
+        <h3 class="text-sm text-gray-500 m-0">
+          Created: {{ formatDate(post.createdAt) }}
+        </h3>
+        } @if(post.updatedAt) {
+        <h3 class="text-sm text-gray-500 m-0">
+          Last Updated: {{ formatDate(post.updatedAt) }}
+        </h3>
+        }
+      </div>
+      <div>
+        <div class="relative inline-block text-left">
+          <button
+            type="button"
+            (click)="visibilityMenu.classList.toggle('hidden')"
+            class="inline-flex justify-center w-30 px-2 py-1 bg-white text-sm font-medium text-gray-700 hover:ring rounded-md hover:bg-gray-50"
+          >
+            {{ visiblity.toUpperCase() }}
+            <i class="bi bi-caret-down-fill ml-2"></i>
+          </button>
+
+          <div
+            #visibilityMenu
+            class="origin-top-left absolute left-0 mt-1 w-30 border border-gray-500 rounded-md shadow-lg bg-white hidden"
+          >
+            <div
+              class="py-1"
+              role="menu"
+              aria-orientation="vertical"
+              aria-labelledby="options-menu"
+            >
+              <button
+                type="button"
+                class="block w-full px-2 py-1 text-left text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem"
+                (click)="
+                  onVisibilityClick('hidden');
+                  visibilityMenu.classList.toggle('hidden')
+                "
+              >
+                Hidden
+              </button>
+              <button
+                type="button"
+                class="block w-full px-2 py-1 text-left text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem"
+                (click)="
+                  onVisibilityClick('draft');
+                  visibilityMenu.classList.toggle('hidden')
+                "
+              >
+                Draft
+              </button>
+              <button
+                type="button"
+                class="block w-full px-2 py-1 text-left text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem"
+                (click)="
+                  onVisibilityClick('visible');
+                  visibilityMenu.classList.toggle('hidden')
+                "
+              >
+                Visible
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full mt-5 px-3 py-2 border rounded-lg">
+      <textarea
+        #bodyInput
+        type="text"
+        [(ngModel)]="body"
+        name="body"
+        placeholder="PUT BODY HERE"
+        (input)="onBodyInput(); updatedBody = true"
+        [disabled]="loading"
+        class="w-full text-md resize-none placeholder-gray-500"
+      ></textarea>
+    </div>
+
+    <div class="flex justify-end items-center gap-4 mt-4">
+      <button
+        type="submit"
+        class="w-50 py-2 bg-green-700 text-white bg-sky-400 hover:bg-sky-500 disabled:bg-gray-400 rounded-full"
+        [disabled]="!updated || !valid"
+      >
+        @if(saveLoading) {
+        <spinner class="mr-1" />
+        } @if (this.id) { Save Post } @else { Create Post }
+      </button>
+
+      <button
+        type="button"
+        (click)="onDeleteClick()"
+        class="w-25 py-2 bg-green-700 text-white bg-red-400 hover:bg-red-500 disabled:bg-gray-400 rounded-full"
+        [disabled]="id === undefined"
+      >
+        @if(deleteLoading) {
+        <spinner class="mr-1" />
+        }
+        <i class="bi bi-trash-fill"></i>
+      </button>
+    </div>
+  </form>
+  }
+</div>
