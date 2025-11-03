@@ -35,6 +35,11 @@ export class BlogPageComponent implements AfterContentInit {
         });
     }
 
+    onPreviewPostClick(post: Post) {
+        this.router.navigate(['/blog/preview', { id: post.id }]);
+    }
+
+
     onEditPostClick(post?: Post) {
         if (post)
             this.router.navigate(['/blog/edit', { id: post.id }]);

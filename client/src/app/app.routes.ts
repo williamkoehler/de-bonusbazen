@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { HomePageComponent } from './pages/home/home.page.component';
 import { BlogPageComponent } from './pages/blog/blog.page.component';
 import { PostEditPageComponent } from './pages/blog/post-edit/post-edit.page.component';
+import { PostPreviewPageComponent } from './pages/blog/post-preview/post-preview.page.component';
 import { AboutPageComponent } from './pages/about/about.page.component';
 import { AccountPageComponent } from './pages/account/account.page.component';
 import { LoginPageComponent } from './pages/login/login.page.component';
@@ -28,6 +29,10 @@ export const routes: Routes = [
             {
                 path: 'edit',
                 component: PostEditPageComponent,
+            },
+            {
+                path: 'preview',
+                component: PostPreviewPageComponent,
             }
         ]
     },
