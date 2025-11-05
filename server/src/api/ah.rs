@@ -67,7 +67,7 @@ async fn post_comment(
     Json(request_body): Json<PostCommentRequestBody>,
 ) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
     return Err(super::ErrorReason::InternalError.into());
-    // if auth_ext.rights >= Rights::Normal {
+    // if auth_ext.rights >= UserRights::Normal {
     //     let post = state
     //         .ah_manager
     //         .add_post(

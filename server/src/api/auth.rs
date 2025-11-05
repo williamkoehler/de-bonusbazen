@@ -7,7 +7,7 @@ use lettre::message::Mailbox;
 use serde::*;
 use tracing::*;
 
-use crate::users::{helper::JwtClaims, model::Rights};
+use crate::{databases::postgres::model, users::helper::JwtClaims};
 
 #[derive(Debug, Serialize)]
 pub struct GetReCaptchaResponseBody {
@@ -36,7 +36,7 @@ pub struct PostLoginResponseBody {
     id: i32,
     nickname: Option<String>,
     email: Option<String>,
-    rights: crate::users::model::Rights,
+    rights: model::UserRights,
 }
 
 pub async fn post_login(
@@ -69,7 +69,7 @@ pub async fn post_login(
             super::ErrorReason::Unauthenticated.into()
         })?;
 
-    if user.rights() == Rights::Unauthenticated {
+    if user.rights == model::UserRights::Unauthenticated {
         warn!(
             name = req_body.name,
             "user tried to login without verifying email"
@@ -91,23 +91,23 @@ pub async fn post_login(
         &state.config.jwt.authentication_secret,
     )
     .map_err(|err| {
-        error!(id = user.id(), "failed to generate jwt: {}", err);
+        error!(id = user.id, "failed to generate jwt: {}", err);
         super::ErrorReason::JwtGenerationFailed.into()
     })?;
 
     Ok(Json(PostLoginResponseBody {
         token,
-        id: user.id(),
-        nickname: user.nickname().map(|x| x.to_string()),
-        email: user.email().map(|x| x.to_string()),
-        rights: user.rights(),
+        id: user.id,
+        nickname: user.nickname.map(|x| x.to_string()),
+        email: user.email.map(|x| x.to_string()),
+        rights: user.rights,
     }))
 }
 
 pub async fn get_check(
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
 ) -> Result<(), StatusCode> {
-    if auth_ext.rights > Rights::Unauthenticated {
+    if auth_ext.rights > model::UserRights::Unauthenticated {
         Ok(())
     } else {
         Err(StatusCode::UNAUTHORIZED)
@@ -152,7 +152,7 @@ pub async fn post_register(
             req_body.nickname.as_deref(),
             Some(&req_body.email),
             &req_body.password,
-            Rights::Unauthenticated,
+            model::UserRights::Unauthenticated,
         )
         .await
         .map_err(|err| {
@@ -224,7 +224,7 @@ pub async fn get_verify(
             None,
             None,
             None,
-            Some(Rights::Normal),
+            Some(model::UserRights::Normal),
             None,
         )
         .await

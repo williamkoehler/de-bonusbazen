@@ -5,7 +5,7 @@ use tracing::*;
 
 use crate::{
     databases::{
-        postgres::{PostgresDb, model::RawUser},
+        postgres::{PostgresDb, model::User},
         redis::RedisDb,
     },
     services::email::EMailService,
@@ -67,7 +67,7 @@ impl UserJobs {
         Ok(())
     }
 
-    pub async fn handle_user_registration_job(&self, user: RawUser) -> anyhow::Result<()> {
+    pub async fn handle_user_registration_job(&self, user: User) -> anyhow::Result<()> {
         info!(id = user.id, "handling user registration...");
 
         let email = match user.email.as_deref() {

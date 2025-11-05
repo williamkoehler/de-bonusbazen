@@ -25,7 +25,7 @@ impl super::PostgresDb {
         include_members: bool,
         include_normal: bool,
         include_unauthenticated: bool,
-    ) -> error::Result<Vec<model::RawUser>> {
+    ) -> error::Result<Vec<model::User>> {
         let mut users = Vec::new();
 
         let mut query_builder = sqlx::QueryBuilder::new(
@@ -37,15 +37,15 @@ impl super::PostgresDb {
             let mut separated = query_builder.separated(", ");
 
             if include_members {
-                separated.push_bind(RawUserRights::Admin);
-                separated.push_bind(RawUserRights::Maintainer);
-                separated.push_bind(RawUserRights::Member);
+                separated.push_bind(UserRights::Admin);
+                separated.push_bind(UserRights::Maintainer);
+                separated.push_bind(UserRights::Member);
             }
             if include_normal {
-                separated.push_bind(RawUserRights::Member);
+                separated.push_bind(UserRights::Member);
             }
             if include_unauthenticated {
-                separated.push_bind(RawUserRights::Unauthenticated);
+                separated.push_bind(UserRights::Unauthenticated);
             }
         }
         query_builder.push(")");
@@ -75,7 +75,7 @@ impl super::PostgresDb {
                 .try_get("email")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            let rights: RawUserRights = row
+            let rights: UserRights = row
                 .try_get("rights")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -83,7 +83,7 @@ impl super::PostgresDb {
                 .try_get("has_profile_picture")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            users.push(model::RawUser {
+            users.push(model::User {
                 id,
                 name: name.to_string(),
                 nickname,
@@ -96,7 +96,7 @@ impl super::PostgresDb {
         Ok(users)
     }
 
-    pub async fn user(&self, id: i32) -> error::Result<model::RawUser> {
+    pub async fn user(&self, id: i32) -> error::Result<model::User> {
         let row = sqlx::query("SELECT id, name, nickname, email, rights, profile_picture is not null as has_profile_picture FROM users WHERE id = $1")
             .bind(id)
             .fetch_one(&self.pool)
@@ -119,7 +119,7 @@ impl super::PostgresDb {
             .try_get("email")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let rights: RawUserRights = row
+        let rights: UserRights = row
             .try_get("rights")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -127,7 +127,7 @@ impl super::PostgresDb {
             .try_get("has_profile_picture")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        Ok(model::RawUser {
+        Ok(model::User {
             id,
             name: name,
             nickname,
@@ -137,7 +137,7 @@ impl super::PostgresDb {
         })
     }
 
-    pub async fn user_by_name(&self, name: &str) -> error::Result<model::RawUser> {
+    pub async fn user_by_name(&self, name: &str) -> error::Result<model::User> {
         let row = sqlx::query("SELECT id, name, nickname, email, rights, profile_picture is not null as has_profile_picture FROM users WHERE name = $1")
             .bind(name)
             .fetch_one(&self.pool)
@@ -160,7 +160,7 @@ impl super::PostgresDb {
             .try_get("email")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let rights: RawUserRights = row
+        let rights: UserRights = row
             .try_get("rights")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -168,7 +168,7 @@ impl super::PostgresDb {
             .try_get("has_profile_picture")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        Ok(model::RawUser {
+        Ok(model::User {
             id,
             name,
             nickname,
@@ -181,7 +181,7 @@ impl super::PostgresDb {
     pub async fn user_and_hash_by_name(
         &self,
         name: &str,
-    ) -> error::Result<(model::RawUser, String)> {
+    ) -> error::Result<(model::User, String)> {
         let row = sqlx::query("SELECT id, name, nickname, email, hash, rights, profile_picture is not null as has_profile_picture FROM users WHERE name = $1")
             .bind(name)
             .fetch_one(&self.pool)
@@ -208,7 +208,7 @@ impl super::PostgresDb {
             .try_get("hash")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let rights: RawUserRights = row
+        let rights: UserRights = row
             .try_get("rights")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -217,7 +217,7 @@ impl super::PostgresDb {
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
         Ok((
-            model::RawUser {
+            model::User {
                 id,
                 name,
                 nickname,
@@ -253,8 +253,8 @@ impl super::PostgresDb {
         nickname: Option<&str>,
         email: Option<&str>,
         hash: &str,
-        rights: RawUserRights,
-    ) -> error::ResultAddUser<model::RawUser> {
+        rights: UserRights,
+    ) -> error::ResultAddUser<model::User> {
         let result =  sqlx::query(
             "INSERT INTO users (name, nickname, email, hash, rights) VALUES ($1, $2, $3, $4, $5) RETURNING id",
         )
@@ -272,7 +272,7 @@ impl super::PostgresDb {
                     .try_get("id")
                     .map_err(|err| error::ErrorAddUser::SqlxError { inner: err })?;
 
-                Ok(model::RawUser {
+                Ok(model::User {
                     id,
                     name: name.to_string(),
                     nickname: nickname.map(|x| x.to_string()),
@@ -308,7 +308,7 @@ impl super::PostgresDb {
         nickname: Option<Option<&str>>,
         email: Option<Option<&str>>,
         hash: Option<&str>,
-        mut rights: Option<RawUserRights>,
+        mut rights: Option<UserRights>,
         profile_picture: Option<&[u8]>,
     ) -> error::Result<()> {
         if id == 1 {

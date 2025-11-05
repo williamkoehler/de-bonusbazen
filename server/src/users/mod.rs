@@ -1,9 +1,8 @@
 use tracing::*;
 
-use crate::databases::postgres::PostgresDb;
+use crate::databases::postgres::{PostgresDb, model};
 
 pub mod error;
-pub mod model;
 
 pub mod helper;
 
@@ -28,7 +27,7 @@ impl UserManager {
                     Some("Admin"),
                     None,
                     &hash,
-                    crate::databases::postgres::model::RawUserRights::Admin,
+                    crate::databases::postgres::model::UserRights::Admin,
                 )
                 .await
                 .map_err(|err| error::ErrorNew::Error { inner: err.into() })?;
@@ -99,7 +98,7 @@ impl UserManager {
         nickname: Option<&str>,
         email: Option<&str>,
         password: &str,
-        rights: model::Rights,
+        rights: model::UserRights,
     ) -> error::ResultAddUser<model::User> {
         // Check name, nickname, email and password content
         {
@@ -181,7 +180,7 @@ impl UserManager {
         nickname: Option<Option<&str>>,
         email: Option<Option<&str>>,
         password: Option<&str>,
-        rights: Option<model::Rights>,
+        rights: Option<model::UserRights>,
         profile_picture: Option<&[u8]>,
     ) -> error::Result<()> {
         let profile_picture = if let Some(profile_picture) = profile_picture {

@@ -7,7 +7,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{ArcState, users::model::Rights};
+use crate::{ArcState, databases::postgres::model};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PostUserRequestBody {
@@ -15,7 +15,7 @@ struct PostUserRequestBody {
     nickname: Option<String>,
     email: Option<String>,
     password: String,
-    rights: Rights,
+    rights: model::UserRights,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -24,16 +24,16 @@ struct PatchUserRequestBody {
     nickname: Option<Option<String>>,
     email: Option<Option<String>>,
     password: Option<String>,
-    rights: Option<Rights>,
+    rights: Option<model::UserRights>,
 }
 
 async fn get_users(
     State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
-) -> Result<Json<Vec<crate::users::model::User>>, (StatusCode, Json<super::ErrorBody>)> {
+) -> Result<Json<Vec<model::User>>, (StatusCode, Json<super::ErrorBody>)> {
     let mut include_normal = false;
 
-    if auth_ext.rights >= Rights::Normal {
+    if auth_ext.rights >= model::UserRights::Normal {
         include_normal = true;
     }
 
@@ -49,7 +49,7 @@ async fn get_users(
 async fn get_user(
     State(state): State<crate::ArcState>,
     Path(id): Path<i32>,
-) -> Result<Json<crate::users::model::User>, (StatusCode, Json<super::ErrorBody>)> {
+) -> Result<Json<model::User>, (StatusCode, Json<super::ErrorBody>)> {
     let user = state
         .user_manager
         .user(id)
@@ -63,8 +63,8 @@ async fn post_user(
     State(state): State<crate::ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Json(request_body): Json<PostUserRequestBody>,
-) -> Result<Json<crate::users::model::User>, (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= Rights::Admin {
+) -> Result<Json<model::User>, (StatusCode, Json<super::ErrorBody>)> {
+    if auth_ext.rights >= model::UserRights::Admin {
         let user = state
             .user_manager
             .add_user(
@@ -89,7 +89,7 @@ async fn patch_user(
     Path(id): Path<i32>,
     Json(request_body): Json<PatchUserRequestBody>,
 ) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= Rights::Admin || auth_ext.id == id {
+    if auth_ext.rights >= model::UserRights::Admin || auth_ext.id == id {
         state
             .user_manager
             .update_user(
@@ -145,7 +145,7 @@ async fn patch_user_profile_picture(
     Path(id): Path<i32>,
     bytes: axum::body::Bytes,
 ) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= Rights::Admin || auth_ext.id == id {
+    if auth_ext.rights >= model::UserRights::Admin || auth_ext.id == id {
         state
             .user_manager
             .update_user(id, None, None, None, None, None, Some(&bytes))
@@ -165,7 +165,7 @@ async fn delete_user(
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
 ) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= Rights::Admin {
+    if auth_ext.rights >= model::UserRights::Admin {
         state
             .user_manager
             .remove_user(id)

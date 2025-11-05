@@ -21,7 +21,7 @@ pub fn verify_hash(hash: &str, password: &str) -> bool {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtClaims {
     pub id: i32,
-    pub rights: crate::users::model::Rights,
+    pub rights: crate::users::model::UserRights,
     pub exp: usize,
 }
 
@@ -37,8 +37,8 @@ pub fn generate_jwt(
     let exp = now + expiry_time;
 
     let claims = JwtClaims {
-        id: user.id(),
-        rights: user.rights(),
+        id: user.id,
+        rights: user.rights,
         exp: exp as usize,
     };
 
