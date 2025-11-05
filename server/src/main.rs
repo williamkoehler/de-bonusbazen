@@ -13,6 +13,7 @@ pub use state::ArcState;
 use crate::services::recaptcha;
 
 mod databases;
+mod jobs;
 mod services;
 
 mod misc;
@@ -46,21 +47,65 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load config
     let config = crate::config::load_config()?;
 
+    // Global config
+    let global_config =
+        std::sync::Arc::new(state::Config {
+            access_host: config.server.access_host.clone().unwrap_or_else(|| {
+                format!("http://localhost:{}", config.server.port.unwrap_or(8080))
+            }),
+            jwt: state::JwtConfig {
+                verification_secret: config
+                    .server
+                    .jwt
+                    .verification_secret
+                    .clone()
+                    .unwrap_or_else(|| {
+                        rand::rng()
+                            .sample_iter(&rand::distr::Alphanumeric)
+                            .take(20)
+                            .map(char::from)
+                            .collect()
+                    }),
+                authentication_secret: config
+                    .server
+                    .jwt
+                    .authentication_secret
+                    .clone()
+                    .unwrap_or_else(|| {
+                        rand::rng()
+                            .sample_iter(&rand::distr::Alphanumeric)
+                            .take(20)
+                            .map(char::from)
+                            .collect()
+                    }),
+                expiry_time: config.server.jwt.expire.unwrap_or(432000 /* 5 days */),
+            },
+            recaptcha: state::ReCaptchaConfig {
+                site_key: config.server.recaptcha.site_key.clone(),
+            },
+        });
+
     // Initialize server
     let postgres = databases::postgres::PostgresDb::new(&config.postgres).await?;
     let redis = databases::redis::RedisDb::new(&config.redis).await?;
 
     let ah_service = services::ah::AhService::new()?;
-    let ah_manager = misc::ah::AhManager::new(ah_service.clone(), postgres.clone());
-
     let recaptcha_service = recaptcha::ReCaptchaService::new(&config.server.recaptcha)?;
-
     let email_service = services::email::EMailService::new(&config.server.email)?;
-
+    
     let user_manager = users::UserManager::new(postgres.clone()).await?;
     let post_manager = posts::PostManager::new(postgres.clone()).await?;
+    let ah_manager = misc::ah::AhManager::new(ah_service.clone(), postgres.clone());
 
-    let job_scheduler = tokio_cron_scheduler::JobScheduler::new().await?;
+    let jobs = jobs::Jobs::new(
+        &config.jobs.unwrap_or_default(),
+        global_config.clone(),
+        postgres.clone(),
+        redis.clone(),
+        ah_service.clone(),
+        email_service.clone(),
+    )
+    .await?;
 
     let state = Arc::new(state::State {
         // Databases
@@ -72,98 +117,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         recaptcha_service,
         email_service,
 
+        // Jobs
+        jobs,
+
         // Managers
         user_manager,
         post_manager,
         ah_manager,
 
-        // Global config
-        config: std::sync::Arc::new(state::Config {
-            access_host: config.server.access_host.unwrap_or_else(|| {
-                format!("http://localhost:{}", config.server.port.unwrap_or(8080))
-            }),
-            jwt: state::JwtConfig {
-                verification_secret: config.server.jwt.verification_secret.unwrap_or_else(|| {
-                    rand::rng()
-                        .sample_iter(&rand::distr::Alphanumeric)
-                        .take(20)
-                        .map(char::from)
-                        .collect()
-                }),
-                authentication_secret: config.server.jwt.authentication_secret.unwrap_or_else(
-                    || {
-                        rand::rng()
-                            .sample_iter(&rand::distr::Alphanumeric)
-                            .take(20)
-                            .map(char::from)
-                            .collect()
-                    },
-                ),
-                expiry_time: config.server.jwt.expire.unwrap_or(432000 /* 5 days */),
-            },
-            recaptcha: state::ReCaptchaConfig {
-                site_key: config.server.recaptcha.site_key,
-            },
-        }),
+        // Config
+        config: global_config,
     });
-
-    // Prepare database
-    {
-        let last_ah_refresh = state.redis.last_ah_refresh().await?;
-        let needs_ah_refresh = match last_ah_refresh {
-            Some(time) => chrono::Utc::now().signed_duration_since(time).num_hours() >= 24,
-            None => true,
-        };
-        if needs_ah_refresh {
-            let state = state.clone();
-
-            tokio::spawn(async move {
-                info!("refreshing AH products...");
-                state.ah_manager.refresh_ah_products().await;
-                if let Err(err) = state.redis.set_last_ah_refresh(chrono::Utc::now()).await {
-                    error!("failed to update AH refresh time: {}", err);
-                }
-            });
-        } else {
-            info!(
-                "AH products are up to date (last refresh: {})",
-                last_ah_refresh.unwrap()
-            );
-        }
-    }
-
-    // Schedule jobs
-    {
-        let jobs_config = config.jobs.unwrap_or_default();
-
-        {
-            let state = state.clone();
-
-            let ah_refresh_cron = jobs_config
-                .ah_refresh_cron
-                .unwrap_or_else(|| "0 0 */12 * * *".to_string()); // Default: every six hours
-            job_scheduler
-                .add(tokio_cron_scheduler::Job::new_async(
-                    ah_refresh_cron,
-                    move |_, _| {
-                        let state = state.clone();
-                        Box::pin(async move {
-                            state.ah_manager.refresh_ah_products().await;
-                            if let Err(err) =
-                                state.redis.set_last_ah_refresh(chrono::Utc::now()).await
-                            {
-                                error!("failed to update AH refresh time: {}", err);
-                            }
-                        })
-                    },
-                )?)
-                .await?;
-        }
-
-        tokio::spawn(async move {
-            let _ = job_scheduler.start().await;
-        });
-    }
 
     // Initialize http server
     let app = Router::new().nest(

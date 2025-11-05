@@ -24,6 +24,7 @@ impl super::PostgresDb {
         &self,
         include_members: bool,
         include_normal: bool,
+        include_unauthenticated: bool,
     ) -> error::Result<Vec<model::RawUser>> {
         let mut users = Vec::new();
 
@@ -42,6 +43,9 @@ impl super::PostgresDb {
             }
             if include_normal {
                 separated.push_bind(RawUserRights::Member);
+            }
+            if include_unauthenticated {
+                separated.push_bind(RawUserRights::Unauthenticated);
             }
         }
         query_builder.push(")");

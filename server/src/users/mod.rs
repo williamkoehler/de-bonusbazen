@@ -44,7 +44,7 @@ impl UserManager {
     ) -> error::Result<Vec<model::User>> {
         let raw_users = self
             .database
-            .users(include_members, include_normal)
+            .users(include_members, include_normal, false)
             .await
             .map_err(|err| {
                 error!("failed to get users: {}", err);

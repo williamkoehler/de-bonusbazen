@@ -4,6 +4,7 @@ use tracing::*;
 pub mod error;
 // pub mod template;
 
+#[derive(Clone)]
 pub struct EMailService {
     transport: SmtpTransport,
 }

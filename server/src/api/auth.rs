@@ -177,79 +177,12 @@ pub async fn post_register(
             }
         })?;
 
-    // Add verification
-    state
-        .postgres
-        .add_verification(user.id())
-        .await
-        .map_err(|err| {
-            warn!(id = user.id(), "failed to add verification: {}", err);
-            super::ErrorReason::InternalError.into()
-        })?;
-
-    let token = {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|err| {
-                error!(id = user.id(), "time went backwards: {}", err);
-                super::ErrorReason::InternalError.into()
-            })?
-            .as_secs();
-
-        let claims = JwtClaims {
-            id: user.id(),
-            rights: user.rights(),
-            exp: (now + 3600) as usize,
-        };
-
-        jsonwebtoken::encode(
-            &jsonwebtoken::Header::default(),
-            &claims,
-            &jsonwebtoken::EncodingKey::from_secret(state.config.jwt.verification_secret.as_ref()),
-        )
-        .map_err(|err| {
-            error!(
-                id = user.id(),
-                "failed to generate verification jwt: {}", err
-            );
-            super::ErrorReason::InternalError.into()
-        })?
-    };
-
-    info!(
-        id = user.id(),
-        name = user.name(),
-        email = user.email(),
-        "register user with {}",
-        format!("/api/register/{}", token)
-    );
-
-    // Send register email
-    let message = lettre::Message::builder()
-        .from(Mailbox::new(
-            Some("Register".to_string()),
-            lettre::Address::new("no-reply", "no-reply").unwrap(),
-        ))
-        .to(Mailbox::new(
-            Some(
-                req_body
-                    .nickname
-                    .clone()
-                    .unwrap_or_else(|| req_body.name.clone()),
-            ),
-            lettre::Address::try_from(req_body.email).unwrap(),
-        ))
-        .subject("Register your account")
-        .body(format!(
-            "Please register your account by visiting the following link: {}\n\nIf you did not register an account, please ignore this email.",
-            format!("{}/api/register/{}", state.config.access_host, token)
-        ))
-        .unwrap();
-
-    state.email_service.send(message).await.map_err(|err| {
-        error!(id = user.id(), "failed to send verification email: {}", err);
-        super::ErrorReason::InternalError.into()
-    })?;
+    // TODO Only queue user registration
+    tokio::spawn(async move {
+        if let Err(err) = state.jobs.user_jobs.handle_user_registrations_job().await {
+            error!("failed to handle user registrations: {}", err);
+        }
+    });
 
     Ok(())
 }

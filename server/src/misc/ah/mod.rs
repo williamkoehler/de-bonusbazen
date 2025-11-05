@@ -45,49 +45,4 @@ impl AhManager {
             .into_iter()
             .map(|raw| raw.data))
     }
-
-    pub async fn refresh_ah_products(&self) {
-        let token = self.ah_service.authenticate().await.unwrap();
-        let categories = self.ah_service.get_categories(&token).await.unwrap();
-
-        for category in categories {
-            match category.id {
-                20603 | 1057 | 18519 | 18521 | 1165 | 11717 | 1045 => continue, // Skip non-food categories
-                _ => {}
-            }
-
-            let mut page = 0;
-            let mut page_count = 1;
-
-            while page < page_count {
-                info!("searching for ah products on page {}", page + 1,);
-                let search_results = self
-                    .ah_service
-                    .search_products(&token, "", page, 500, Some(category.id))
-                    .await
-                    .unwrap();
-
-                page_count = search_results.page.total_pages as usize;
-
-                let mut raw_products = search_results
-                    .products
-                    .into_iter()
-                    .map(|product| crate::databases::postgres::model::RawAhProduct {
-                        id: product.hq_id as i64,
-                        data: product.into(),
-                    })
-                    .filter(|raw| raw.data.bonus);
-
-                self.postgres
-                    .set_ah_products(&mut raw_products)
-                    .await
-                    .unwrap();
-
-                page += 1;
-            }
-        }
-        info!("refreshed AH products");
-
-        // Ok(())
-    }
 }

@@ -9,12 +9,14 @@ pub struct State {
     pub redis: databases::redis::RedisDb,
 
     pub ah_service: services::ah::AhService,
-    pub ah_manager: misc::ah::AhManager,
     pub recaptcha_service: services::recaptcha::ReCaptchaService,
     pub email_service: services::email::EMailService,
 
+    pub jobs: jobs::Jobs,
+
     pub user_manager: users::UserManager,
     pub post_manager: posts::PostManager,
+    pub ah_manager: misc::ah::AhManager,
 
     pub config: Arc<Config>,
 }
