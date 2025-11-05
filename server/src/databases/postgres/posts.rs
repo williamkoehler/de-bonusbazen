@@ -27,7 +27,7 @@ impl super::PostgresDb {
         include_hidden: bool,
         include_draft: bool,
         include_visible: bool,
-    ) -> error::Result<Vec<model::RawPost>> {
+    ) -> error::Result<Vec<model::Post>> {
         let mut posts = Vec::new();
 
         let mut query_builder = sqlx::QueryBuilder::new(
@@ -39,13 +39,13 @@ impl super::PostgresDb {
             let mut separated = query_builder.separated(", ");
 
             if include_hidden {
-                separated.push_bind(RawPostVisibility::Hidden);
+                separated.push_bind(PostVisibility::Hidden);
             }
             if include_draft {
-                separated.push_bind(RawPostVisibility::Draft);
+                separated.push_bind(PostVisibility::Draft);
             }
             if include_visible {
-                separated.push_bind(RawPostVisibility::Visible);
+                separated.push_bind(PostVisibility::Visible);
             }
         }
         query_builder.push(")");
@@ -62,7 +62,7 @@ impl super::PostgresDb {
                 .try_get("id")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            let visibility: model::RawPostVisibility = row
+            let visibility: model::PostVisibility = row
                 .try_get("visibility")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -86,11 +86,11 @@ impl super::PostgresDb {
                 .try_get("extract")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            let metadata: Option<sqlx::types::Json<model::RawPostMetadata>> = row
+            let metadata: Option<sqlx::types::Json<model::PostMetadata>> = row
                 .try_get("metadata")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            posts.push(model::RawPost {
+            posts.push(model::Post {
                 id,
                 visibility,
                 created_at,
@@ -111,7 +111,7 @@ impl super::PostgresDb {
         include_hidden: bool,
         include_draft: bool,
         include_visible: bool,
-    ) -> error::Result<(model::RawPost, String)> {
+    ) -> error::Result<(model::Post, String)> {
         let mut query_builder = sqlx::QueryBuilder::new(
             "SELECT id, visibility, created_at, updated_at, author, title, metadata, body FROM posts WHERE ",
         );
@@ -125,13 +125,13 @@ impl super::PostgresDb {
             let mut separated = query_builder.separated(", ");
 
             if include_hidden {
-                separated.push_bind(RawPostVisibility::Hidden);
+                separated.push_bind(PostVisibility::Hidden);
             }
             if include_draft {
-                separated.push_bind(RawPostVisibility::Draft);
+                separated.push_bind(PostVisibility::Draft);
             }
             if include_visible {
-                separated.push_bind(RawPostVisibility::Visible);
+                separated.push_bind(PostVisibility::Visible);
             }
         }
         query_builder.push(")");
@@ -147,7 +147,7 @@ impl super::PostgresDb {
             .try_get("id")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let visibility: model::RawPostVisibility = row
+        let visibility: model::PostVisibility = row
             .try_get("visibility")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -167,7 +167,7 @@ impl super::PostgresDb {
             .try_get("title")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        let metadata: Option<sqlx::types::Json<model::RawPostMetadata>> =
+        let metadata: Option<sqlx::types::Json<model::PostMetadata>> =
             row.try_get("metadata")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -176,7 +176,7 @@ impl super::PostgresDb {
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
         Ok((
-            model::RawPost {
+            model::Post {
                 id,
                 visibility,
                 created_at,
@@ -192,13 +192,13 @@ impl super::PostgresDb {
 
     pub async fn add_post(
         &self,
-        visibility: model::RawPostVisibility,
+        visibility: model::PostVisibility,
         author: i32,
         title: &str,
         body: &str,
-    ) -> error::Result<model::RawPost> {
+    ) -> error::Result<model::Post> {
         let created_at = chrono::Utc::now();
-        let metadata = model::RawPostMetadata {};
+        let metadata = model::PostMetadata {};
 
         let row =
             sqlx::query("INSERT INTO posts (visibility, created_at, updated_at, author, title, metadata, body) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id")
@@ -217,7 +217,7 @@ impl super::PostgresDb {
             .try_get("id")
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-        Ok(model::RawPost {
+        Ok(model::Post {
             id,
             visibility,
             created_at,
@@ -232,9 +232,9 @@ impl super::PostgresDb {
     pub async fn update_post(
         &self,
         id: i32,
-        visibility: Option<model::RawPostVisibility>,
+        visibility: Option<model::PostVisibility>,
         title: Option<&str>,
-        metadata: Option<&model::RawPostMetadata>,
+        metadata: Option<&model::PostMetadata>,
         body: Option<&str>,
     ) -> error::Result<()> {
         let mut query_builder = sqlx::QueryBuilder::new("UPDATE posts SET ");

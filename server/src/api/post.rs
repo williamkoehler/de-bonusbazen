@@ -6,18 +6,18 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{ArcState, databases::postgres::model, posts::model::PostVisibility};
+use crate::{ArcState, databases::postgres::model};
 
 #[derive(Debug, Deserialize)]
 struct PostPostRequestBody {
-    visibility: Option<crate::posts::model::PostVisibility>,
+    visibility: Option<model::PostVisibility>,
     title: String,
     body: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PatchPostRequestBody {
-    visibility: Option<crate::posts::model::PostVisibility>,
+    visibility: Option<model::PostVisibility>,
     title: Option<String>,
     body: Option<String>,
 }
@@ -25,7 +25,7 @@ struct PatchPostRequestBody {
 async fn get_posts(
     State(state): State<ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
-) -> Result<Json<Vec<crate::posts::model::Post>>, (StatusCode, Json<super::ErrorBody>)> {
+) -> Result<Json<Vec<model::Post>>, (StatusCode, Json<super::ErrorBody>)> {
     let posts = state
         .post_manager
         .posts(auth_ext.rights >= model::UserRights::Member)
@@ -39,7 +39,7 @@ async fn get_post(
     State(state): State<ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
-) -> Result<Json<crate::posts::model::Post>, (StatusCode, Json<super::ErrorBody>)> {
+) -> Result<Json<model::Post>, (StatusCode, Json<super::ErrorBody>)> {
     let post = state
         .post_manager
         .post(id, auth_ext.rights >= model::UserRights::Member)
@@ -53,13 +53,13 @@ async fn post_post(
     State(state): State<ArcState>,
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Json(request_body): Json<PostPostRequestBody>,
-) -> Result<Json<crate::posts::model::Post>, (StatusCode, Json<super::ErrorBody>)> {
+) -> Result<Json<model::Post>, (StatusCode, Json<super::ErrorBody>)> {
     if auth_ext.rights >= model::UserRights::Member {
         let visibility = request_body
             .visibility
-            .unwrap_or(crate::posts::model::PostVisibility::Draft);
+            .unwrap_or(model::PostVisibility::Draft);
 
-        if visibility >= PostVisibility::Visible {
+        if visibility >= model::PostVisibility::Visible {
             if !(auth_ext.rights >= model::UserRights::Maintainer) {
                 warn!("user with insufficient rights tried to create a visible post");
                 return Err(super::ErrorReason::Unauthorized.into());
@@ -92,7 +92,7 @@ async fn patch_post(
     if auth_ext.rights >= model::UserRights::Member {
         // Check user rights for visibility change
         let visibility = if let Some(visibility) = request_body.visibility {
-            if visibility >= PostVisibility::Visible {
+            if visibility >= model::PostVisibility::Visible {
                 if !(auth_ext.rights >= model::UserRights::Maintainer) {
                     warn!("user with insufficient rights tried to create a visible post");
                     return Err(super::ErrorReason::Unauthorized.into());

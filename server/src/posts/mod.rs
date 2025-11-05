@@ -1,9 +1,8 @@
 use tracing::*;
 
-use crate::databases::postgres::PostgresDb;
+use crate::databases::postgres::{PostgresDb, model};
 
 pub mod error;
-pub mod model;
 
 #[derive(Clone)]
 pub struct PostManager {
@@ -32,12 +31,16 @@ impl PostManager {
     }
 
     pub async fn post(&self, id: i32, show_hidden: bool) -> error::Result<model::Post> {
-        let raw_post = self.database.post_and_body(id, show_hidden, show_hidden, true).await.map_err(|err| {
-            error!(id = id, "failed to get post: {}", err);
-            error::Error::DatabaseError { inner: err }
-        })?;
+        let (post, _) = self
+            .database
+            .post_and_body(id, show_hidden, show_hidden, true)
+            .await
+            .map_err(|err| {
+                error!(id = id, "failed to get post: {}", err);
+                error::Error::DatabaseError { inner: err }
+            })?;
 
-        Ok(raw_post.into())
+        Ok(post)
     }
 
     pub async fn add_post(

@@ -24,28 +24,31 @@ pub struct User {
     pub has_profile_picture: bool,
 }
 
-#[derive(Debug, sqlx::Type)]
+#[derive(Debug, sqlx::Type, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[sqlx(type_name = "VARCHAR")]
 #[sqlx(rename_all = "lowercase")]
-pub enum RawPostVisibility {
+#[serde(rename_all = "snake_case")]
+pub enum PostVisibility {
     Visible,
     Draft,
     Hidden,
 }
 
-pub struct RawPost {
+#[serde_with::skip_serializing_none]
+#[derive(Debug, Serialize)]
+pub struct Post {
     pub id: i32,
-    pub visibility: RawPostVisibility,
+    pub visibility: PostVisibility,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub author: i32,
     pub title: String,
     pub extract: Option<String>,
-    pub metadata: Option<RawPostMetadata>,
+    pub metadata: Option<PostMetadata>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct RawPostMetadata {}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PostMetadata {}
 
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
