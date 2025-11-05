@@ -1,5 +1,5 @@
 use futures_util::TryStreamExt;
-use sqlx::{Row};
+use sqlx::Row;
 
 use super::error;
 use crate::databases::postgres::model;
@@ -18,11 +18,10 @@ impl super::PostgresDb {
 
         let offset = (page * size) as i64;
         let size = size as i64;
-        let mut rows = 
-            sqlx::query("SELECT id, data FROM ah_products LIMIT $1 OFFSET $2")
-                .bind(&size)
-                .bind(&offset)
-                .fetch(&self.pool);
+        let mut rows = sqlx::query("SELECT id, data FROM ah_products LIMIT $1 OFFSET $2")
+            .bind(&size)
+            .bind(&offset)
+            .fetch(&self.pool);
         while let Some(row) = rows
             .try_next()
             .await
@@ -42,12 +41,19 @@ impl super::PostgresDb {
         Ok(products)
     }
 
-    pub async fn ah_products_most_bonus(&self) -> error::Result<Vec<model::RawAhProduct>> {
+    pub async fn ah_products_most_bonus(
+        &self,
+        page: usize,
+        size: usize,
+    ) -> error::Result<Vec<model::RawAhProduct>> {
         let mut products = Vec::new();
 
-        let mut rows = 
-            sqlx::query("SELECT id, data FROM ah_products WHERE data::jsonb ? 'price_before_bonus' AND data::jsonb ? 'price' ORDER BY (cast(data::jsonb -> 'price_before_bonus' as real) / cast(data::jsonb -> 'price' as real)) DESC LIMIT 40")
-                .fetch(&self.pool);
+        let offset = (page * size) as i64;
+        let size = size as i64;
+        let mut rows = sqlx::query("SELECT id, data FROM ah_products WHERE ranking IS NOT NULL ORDER BY ranking DESC, id ASC LIMIT $1 OFFSET $2")
+            .bind(&size)
+            .bind(&offset)
+            .fetch(&self.pool);
         while let Some(row) = rows
             .try_next()
             .await
@@ -78,8 +84,17 @@ impl super::PostgresDb {
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
         for product in products {
-            sqlx::query("INSERT INTO ah_products (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data")
+            let ranking = if let (Some(price_before_bonus), Some(price)) =
+                (product.data.price_before_bonus, product.data.price)
+            {
+                Some(((price_before_bonus / price) * 1000.0) as i64)
+            } else {
+                None
+            };
+
+            sqlx::query("INSERT INTO ah_products (id, ranking, data) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET ranking = EXCLUDED.ranking, data = EXCLUDED.data")
                 .bind(&product.id)
+                .bind(&ranking)
                 .bind(sqlx::types::Json(&product.data))
                 .execute(&mut *transaction)
                 .await
@@ -90,6 +105,39 @@ impl super::PostgresDb {
             .commit()
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        Ok(())
+    }
+
+    pub async fn add_ah_comment(
+        &self,
+        product_id: i64,
+        user_id: i32,
+        comment: &str,
+    ) -> error::Result<()> {
+        sqlx::query("INSERT INTO ah_comments (product_id, user_id, comment) VALUES ($1, $2, $3)")
+            .bind(&product_id)
+            .bind(&user_id)
+            .bind(&comment)
+            .execute(&self.pool)
+            .await
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        Ok(())
+    }
+
+    pub async fn remove_ah_comment(&self, id: i32) -> error::Result<()> {
+        let result = sqlx::query("DELETE FROM ah_comments WHERE id = $1")
+            .bind(&id)
+            .execute(&self.pool)
+            .await
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        if result.rows_affected() == 0 {
+            return Err(error::Error::OperationFailed {
+                msg: "failed to remove comment.",
+            });
+        }
 
         Ok(())
     }

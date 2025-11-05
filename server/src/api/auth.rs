@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use lettre::message::Mailbox;
 use serde::*;
 use tracing::*;
 
@@ -215,7 +216,40 @@ pub async fn post_register(
         })?
     };
 
-    info!("register user with {}", format!("/api/register/{}", token));
+    info!(
+        id = user.id(),
+        name = user.name(),
+        email = user.email(),
+        "register user with {}",
+        format!("/api/register/{}", token)
+    );
+
+    // Send register email
+    let message = lettre::Message::builder()
+        .from(Mailbox::new(
+            Some("Register".to_string()),
+            lettre::Address::new("no-reply", "no-reply").unwrap(),
+        ))
+        .to(Mailbox::new(
+            Some(
+                req_body
+                    .nickname
+                    .clone()
+                    .unwrap_or_else(|| req_body.name.clone()),
+            ),
+            lettre::Address::try_from(req_body.email).unwrap(),
+        ))
+        .subject("Register your account")
+        .body(format!(
+            "Please register your account by visiting the following link: {}\n\nIf you did not register an account, please ignore this email.",
+            format!("{}/api/register/{}", state.config.access_host, token)
+        ))
+        .unwrap();
+
+    state.email_service.send(message).await.map_err(|err| {
+        error!(id = user.id(), "failed to send verification email: {}", err);
+        super::ErrorReason::InternalError.into()
+    })?;
 
     Ok(())
 }

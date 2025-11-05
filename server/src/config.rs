@@ -10,12 +10,13 @@ pub struct Config {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServerConfig {
+    pub access_host: Option<String>,
     pub host: Option<String>,
     pub port: Option<u16>,
 
     pub jwt: ServerJwtConfig,
     pub recaptcha: ServerReCaptchaConfig,
-    // pub email: ServerEMailConfig,
+    pub email: ServerEMailConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,10 +34,10 @@ pub struct ServerReCaptchaConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServerEMailConfig {
-    pub smtp_server: String,
-    pub smtp_username: String,
-    pub smtp_password: String,
-    pub from_address: String,
+    pub server: String,
+    pub use_starttls: Option<bool>,
+    pub username: Option<String>,
+    pub password: Option<String>,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]

@@ -11,6 +11,7 @@ pub struct State {
     pub ah_service: services::ah::AhService,
     pub ah_manager: misc::ah::AhManager,
     pub recaptcha_service: services::recaptcha::ReCaptchaService,
+    pub email_service: services::email::EMailService,
 
     pub user_manager: users::UserManager,
     pub post_manager: posts::PostManager,
@@ -19,6 +20,7 @@ pub struct State {
 }
 
 pub struct Config {
+    pub access_host: String,
     pub jwt: JwtConfig,
     pub recaptcha: ReCaptchaConfig,
 }

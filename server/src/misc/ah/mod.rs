@@ -34,10 +34,12 @@ impl AhManager {
 
     pub async fn ah_products_most_bonus(
         &self,
+        pagination: Option<(usize, usize)>,
     ) -> error::Result<impl Iterator<Item = model::Product>> {
+        let (page, size) = pagination.unwrap_or((0, 100));
         Ok(self
             .postgres
-            .ah_products_most_bonus()
+            .ah_products_most_bonus(page, size)
             .await
             .map_err(|err| error::Error::DatabaseError { inner: err })?
             .into_iter()

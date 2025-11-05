@@ -1,12 +1,12 @@
 use axum::{
-    Json,
-    extract::{Query, State},
+    Extension, Json,
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 use serde::*;
 use tracing::*;
 
-use crate::ArcState;
+use crate::{ArcState, users::model::Rights};
 
 #[derive(Deserialize)]
 struct Pagination {
@@ -41,7 +41,7 @@ async fn get_products_most_bonus(
 ) -> Result<Json<Vec<crate::misc::ah::model::Product>>, (StatusCode, Json<super::ErrorBody>)> {
     let products = state
         .ah_manager
-        .ah_products_most_bonus()
+        .ah_products_most_bonus(None)
         .await
         .map_err(|err| {
             error!("failed to get products with most bonus: {}", err);
@@ -49,6 +49,45 @@ async fn get_products_most_bonus(
         })?;
 
     Ok(Json(products.collect::<Vec<_>>()))
+}
+
+#[derive(Debug, Deserialize)]
+struct PostCommentRequestBody {
+    product_id: i64,
+    comment: String,
+}
+
+async fn post_comment(
+    State(state): State<ArcState>,
+    Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
+    Json(request_body): Json<PostCommentRequestBody>,
+) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
+    return Err(super::ErrorReason::InternalError.into());
+    // if auth_ext.rights >= Rights::Normal {
+    //     let post = state
+    //         .ah_manager
+    //         .add_post(
+    //             visibility,
+    //             auth_ext.id,
+    //             &request_body.title,
+    //             &request_body.body,
+    //         )
+    //         .await
+    //         .map_err(|_| super::ErrorReason::InternalError.into())?;
+
+    //     Ok(Json(post))
+    // } else {
+    //     Err(super::ErrorReason::Unauthorized.into())
+    // }
+}
+
+async fn delete_comment(
+    State(state): State<ArcState>,
+    Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
+    Path(id): Path<i32>,
+) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
+    return Err(super::ErrorReason::InternalError.into());
+    // Ok(())
 }
 
 pub fn router() -> axum::Router<ArcState> {

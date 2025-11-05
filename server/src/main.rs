@@ -55,6 +55,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let recaptcha_service = recaptcha::ReCaptchaService::new(&config.server.recaptcha)?;
 
+    let email_service = services::email::EMailService::new(&config.server.email)?;
+
     let user_manager = users::UserManager::new(postgres.clone()).await?;
     let post_manager = posts::PostManager::new(postgres.clone()).await?;
 
@@ -68,6 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Services
         ah_service,
         recaptcha_service,
+        email_service,
 
         // Managers
         user_manager,
@@ -76,6 +79,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Global config
         config: std::sync::Arc::new(state::Config {
+            access_host: config.server.access_host.unwrap_or_else(|| {
+                format!("http://localhost:{}", config.server.port.unwrap_or(8080))
+            }),
             jwt: state::JwtConfig {
                 verification_secret: config.server.jwt.verification_secret.unwrap_or_else(|| {
                     rand::rng()
@@ -105,7 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let last_ah_refresh = state.redis.last_ah_refresh().await?;
         let needs_ah_refresh = match last_ah_refresh {
-            Some(time) => chrono::Utc::now().signed_duration_since(time).num_hours() >= 2,
+            Some(time) => chrono::Utc::now().signed_duration_since(time).num_hours() >= 24,
             None => true,
         };
         if needs_ah_refresh {
@@ -135,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let ah_refresh_cron = jobs_config
                 .ah_refresh_cron
-                .unwrap_or_else(|| "0 0 */6 * * *".to_string()); // Default: every six hours
+                .unwrap_or_else(|| "0 0 */12 * * *".to_string()); // Default: every six hours
             job_scheduler
                 .add(tokio_cron_scheduler::Job::new_async(
                     ah_refresh_cron,

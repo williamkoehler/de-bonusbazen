@@ -46,7 +46,14 @@ impl PostgresDb {
                 error::ErrorNew::SqlxError { inner: err }
             })?;
         
-        pool.execute(sqlx::query("CREATE TABLE IF NOT EXISTS ah_products (id BIGINT PRIMARY KEY, data JSONB NOT NULL)"))
+        pool.execute(sqlx::query("CREATE TABLE IF NOT EXISTS ah_products (id BIGINT PRIMARY KEY, ranking BIGINT, data JSONB NOT NULL)"))
+            .await
+            .map_err(|err|{
+                error!("failed to create ah_products table: {}", err);
+                error::ErrorNew::SqlxError { inner: err }
+            })?;
+        
+        pool.execute(sqlx::query("CREATE TABLE IF NOT EXISTS ah_comments (id SERIAL PRIMARY KEY, product_id BIGINT REFERENCES ah_products(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, comment VARCHAR NOT NULL)"))
             .await
             .map_err(|err|{
                 error!("failed to create ah_products table: {}", err);
