@@ -6,7 +6,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{ArcState, users::model::Rights};
+use crate::ArcState;
 
 #[derive(Deserialize)]
 struct Pagination {
@@ -17,38 +17,42 @@ struct Pagination {
 async fn get_products(
     State(state): State<ArcState>,
     Query(pagination): Query<Pagination>,
-) -> Result<Json<Vec<crate::misc::ah::model::Product>>, (StatusCode, Json<super::ErrorBody>)> {
-    let pagination = if let (Some(page), Some(size)) = (pagination.page, pagination.size) {
-        Some((page, size))
+) -> Result<
+    Json<Vec<crate::databases::postgres::model::AhProduct>>,
+    (StatusCode, Json<super::ErrorBody>),
+> {
+    let (page, size) = if let (Some(page), Some(size)) = (pagination.page, pagination.size) {
+        (page, size)
     } else {
-        None
+        (0, 100)
     };
 
     let products = state
-        .ah_manager
-        .ah_products(pagination)
+        .postgres
+        .ah_products(page, size)
         .await
         .map_err(|err| {
             error!("failed to get products: {}", err);
             super::ErrorReason::InternalError.into()
         })?;
 
-    Ok(Json(products.collect::<Vec<_>>()))
+    Ok(Json(products))
 }
 
 async fn get_products_most_bonus(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<crate::misc::ah::model::Product>>, (StatusCode, Json<super::ErrorBody>)> {
+) -> Result<Json<Vec<crate::databases::postgres::model::AhProduct>>, (StatusCode, Json<super::ErrorBody>)> {
+    let (page, size) = None.unwrap_or((0, 100));
     let products = state
-        .ah_manager
-        .ah_products_most_bonus(None)
+        .postgres
+        .ah_products_most_bonus(page, size)
         .await
         .map_err(|err| {
             error!("failed to get products with most bonus: {}", err);
             super::ErrorReason::InternalError.into()
         })?;
 
-    Ok(Json(products.collect::<Vec<_>>()))
+    Ok(Json(products))
 }
 
 #[derive(Debug, Deserialize)]

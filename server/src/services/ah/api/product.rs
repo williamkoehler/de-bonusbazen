@@ -116,9 +116,9 @@ pub struct Product {
     pub virtual_bundle_items: Option<Vec<VirtualBundleItem>>,
 }
 
-impl Into<crate::misc::ah::model::Product> for Product {
-    fn into(self) -> crate::misc::ah::model::Product {
-        crate::misc::ah::model::Product {
+impl Into<crate::databases::postgres::model::AhProduct> for Product {
+    fn into(self) -> crate::databases::postgres::model::AhProduct {
+        crate::databases::postgres::model::AhProduct {
             id: self.hq_id,
             name: self.title,
             image: self
@@ -128,7 +128,7 @@ impl Into<crate::misc::ah::model::Product> for Product {
                 .map(|image| image.url.clone()),
             bonus: self.is_bonus.map_or(false, |x| x),
             price: self.current_price,
-            price_before_bonus: self.price_before_bonus
+            price_before_bonus: self.price_before_bonus,
         }
     }
 }

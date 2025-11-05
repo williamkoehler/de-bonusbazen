@@ -16,7 +16,6 @@ mod databases;
 mod jobs;
 mod services;
 
-mod misc;
 mod posts;
 mod users;
 
@@ -95,7 +94,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let user_manager = users::UserManager::new(postgres.clone()).await?;
     let post_manager = posts::PostManager::new(postgres.clone()).await?;
-    let ah_manager = misc::ah::AhManager::new(ah_service.clone(), postgres.clone());
 
     let jobs = jobs::Jobs::new(
         &config.jobs.unwrap_or_default(),
@@ -123,7 +121,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Managers
         user_manager,
         post_manager,
-        ah_manager,
 
         // Config
         config: global_config,

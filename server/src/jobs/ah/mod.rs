@@ -1,5 +1,8 @@
 use crate::{
-    databases::{postgres::PostgresDb, redis::RedisDb},
+    databases::{
+        postgres::{PostgresDb, model::AhProduct},
+        redis::RedisDb,
+    },
     services::ah::AhService,
 };
 use tracing::*;
@@ -47,11 +50,8 @@ impl AhJobs {
                 let mut raw_products = search_results
                     .products
                     .into_iter()
-                    .map(|product| crate::databases::postgres::model::RawAhProduct {
-                        id: product.hq_id as i64,
-                        data: product.into(),
-                    })
-                    .filter(|raw| raw.data.bonus);
+                    .map::<AhProduct, _>(|product| product.into())
+                    .filter(|product| product.bonus);
 
                 self.postgres.set_ah_products(&mut raw_products).await?;
 

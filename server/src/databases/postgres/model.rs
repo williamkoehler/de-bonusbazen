@@ -44,7 +44,13 @@ pub struct RawPost {
 #[derive(Serialize, Deserialize)]
 pub struct RawPostMetadata {}
 
-pub struct RawAhProduct {
-    pub id: i64,
-    pub data: crate::misc::ah::model::Product,
+#[serde_with::skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AhProduct {
+    pub id: u64,
+    pub name: String,
+    pub image: Option<String>,
+    pub bonus: bool,
+    pub price: Option<f64>,
+    pub price_before_bonus: Option<f64>,
 }

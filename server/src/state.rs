@@ -16,7 +16,6 @@ pub struct State {
 
     pub user_manager: users::UserManager,
     pub post_manager: posts::PostManager,
-    pub ah_manager: misc::ah::AhManager,
 
     pub config: Arc<Config>,
 }

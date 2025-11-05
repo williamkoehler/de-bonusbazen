@@ -5,20 +5,29 @@ use super::error;
 use crate::databases::postgres::model;
 
 impl super::PostgresDb {
-    pub fn ah_product_count(&self) -> error::Result<i64> {
-        todo!();
+    pub async fn ah_product_count(&self) -> error::Result<usize> {
+        let row = sqlx::query("SELECT count(*) as count FROM ah_products")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        let count: i64 = row
+            .try_get("count")
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        Ok(count as usize)
     }
 
     pub async fn ah_products(
         &self,
         page: usize,
         size: usize,
-    ) -> error::Result<Vec<model::RawAhProduct>> {
+    ) -> error::Result<Vec<model::AhProduct>> {
         let mut products = Vec::new();
 
         let offset = (page * size) as i64;
         let size = size as i64;
-        let mut rows = sqlx::query("SELECT id, data FROM ah_products LIMIT $1 OFFSET $2")
+        let mut rows = sqlx::query("SELECT data FROM ah_products LIMIT $1 OFFSET $2")
             .bind(&size)
             .bind(&offset)
             .fetch(&self.pool);
@@ -27,15 +36,11 @@ impl super::PostgresDb {
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?
         {
-            let id: i64 = row
-                .try_get("id")
-                .map_err(|err| error::Error::SqlxError { inner: err })?;
-
-            let data: sqlx::types::Json<crate::misc::ah::model::Product> = row
+            let data: sqlx::types::Json<model::AhProduct> = row
                 .try_get("data")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            products.push(model::RawAhProduct { id, data: data.0 });
+            products.push(data.0);
         }
 
         Ok(products)
@@ -45,12 +50,12 @@ impl super::PostgresDb {
         &self,
         page: usize,
         size: usize,
-    ) -> error::Result<Vec<model::RawAhProduct>> {
+    ) -> error::Result<Vec<model::AhProduct>> {
         let mut products = Vec::new();
 
         let offset = (page * size) as i64;
         let size = size as i64;
-        let mut rows = sqlx::query("SELECT id, data FROM ah_products WHERE ranking IS NOT NULL ORDER BY ranking DESC, id ASC LIMIT $1 OFFSET $2")
+        let mut rows = sqlx::query("SELECT data FROM ah_products WHERE ranking IS NOT NULL ORDER BY ranking DESC, id ASC LIMIT $1 OFFSET $2")
             .bind(&size)
             .bind(&offset)
             .fetch(&self.pool);
@@ -59,15 +64,11 @@ impl super::PostgresDb {
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?
         {
-            let id: i64 = row
-                .try_get("id")
-                .map_err(|err| error::Error::SqlxError { inner: err })?;
-
-            let data: sqlx::types::Json<crate::misc::ah::model::Product> = row
+            let data: sqlx::types::Json<model::AhProduct> = row
                 .try_get("data")
                 .map_err(|err| error::Error::SqlxError { inner: err })?;
 
-            products.push(model::RawAhProduct { id, data: data.0 });
+            products.push(data.0);
         }
 
         Ok(products)
@@ -75,7 +76,7 @@ impl super::PostgresDb {
 
     pub async fn set_ah_products(
         &self,
-        products: &mut impl Iterator<Item = model::RawAhProduct>,
+        products: &mut impl Iterator<Item = model::AhProduct>,
     ) -> error::Result<()> {
         let mut transaction = self
             .pool
@@ -85,7 +86,7 @@ impl super::PostgresDb {
 
         for product in products {
             let ranking = if let (Some(price_before_bonus), Some(price)) =
-                (product.data.price_before_bonus, product.data.price)
+                (product.price_before_bonus, product.price)
             {
                 Some(((price_before_bonus / price) * 1000.0) as i64)
             } else {
@@ -93,9 +94,9 @@ impl super::PostgresDb {
             };
 
             sqlx::query("INSERT INTO ah_products (id, ranking, data) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET ranking = EXCLUDED.ranking, data = EXCLUDED.data")
-                .bind(&product.id)
+                .bind(&(product.id as i64))
                 .bind(&ranking)
-                .bind(sqlx::types::Json(&product.data))
+                .bind(sqlx::types::Json(&product))
                 .execute(&mut *transaction)
                 .await
                 .map_err(|err| error::Error::SqlxError { inner: err })?;

@@ -6,7 +6,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{ArcState, api::auth, posts::model::PostVisibility, users::model::Rights};
+use crate::{ArcState, posts::model::PostVisibility, users::model::Rights};
 
 #[derive(Debug, Deserialize)]
 struct PostPostRequestBody {
