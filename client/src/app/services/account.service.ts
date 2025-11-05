@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable } from '@angular/core';
 import { RawLoginRequestBody, RawLoginResponseBody, RawReCaptchaResponseBody, RawRegisterRequestBody, RawUpdateRequestBody } from './models/account';
 import { errorFromReason, handleError, InternalServiceError } from './errors';
 import store from 'store2';
@@ -23,6 +23,8 @@ interface AccountInfo {
 export class AccountService {
     _info?: AccountInfo;
     _recaptchaSiteKey?: string;
+
+    onChanged: EventEmitter<void> = new EventEmitter<void>();
 
     get isLoggedIn(): boolean {
         return !!this._info;
@@ -91,6 +93,8 @@ export class AccountService {
         else {
             accountStore.remove('token')
         }
+
+        this.onChanged.emit();
     }
 
     private writeStore() {
@@ -155,6 +159,7 @@ export class AccountService {
                     this.writeStore();
 
                     resolve();
+                    this.onChanged.emit();
                 },
                 error: (err: HttpErrorResponse) => {
                     reject(handleError(err));
@@ -271,6 +276,7 @@ export class AccountService {
                             this.writeStore();
 
                             resolve();
+                            this.onChanged.emit();
                         },
                         error: err => {
                             reject(err);
@@ -302,6 +308,7 @@ export class AccountService {
                         .subscribe({
                             next: _ => {
                                 resolve();
+                                this.onChanged.emit();
                             },
                             error: err => {
                                 reject(err);
