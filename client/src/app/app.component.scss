@@ -5,11 +5,11 @@
     height: 100vh;
 
     .body {
-        height: calc(100vh);
         padding-top: 80px; // Adjust based on nav-bar height
 
-        overflow-y: auto;
+        .scroll {
+            min-height: calc(100vh - 80px);
+            // overflow-y: auto;
+        }
     }
-
-    background-color: $background-color;
 }

@@ -1,5 +1,6 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener } from '@angular/core';
 import { AhService } from '../../../services/ah.service';
+import { Product } from '../../../services/models/ah';
 import moment from 'moment';
 
 @Component({
@@ -9,23 +10,30 @@ import moment from 'moment';
     styleUrl: './ah.most-bonus.page.component.scss'
 })
 export class AhMostBonusPageComponent {
-    get products() {
-        return this.ahService.productsMostBonus ?? [];
-    }
+    products: Product[] = [];
+    lastPage = 0;
 
     constructor(private ahService: AhService, private changeDetectorRef: ChangeDetectorRef) { }
 
     ngAfterContentInit() {
-        this.updatePosts();
+        this.getNextPosts();
     }
 
-    updatePosts() {
-        this.ahService.getPosts().then((_) => {
-            console.info("Updated products");
-            // Note that we do not care about the products here, as we access them directly through the getter.
-            // We only want to trigger change detection when products have finished loading.
-            this.changeDetectorRef.detectChanges();
+    getNextPosts() {
+        this.ahService.getPosts(this.lastPage + 1).then(([products, lastPage]) => {
+            console.info("Successfully loaded next products");
+            this.products = products;
+            this.lastPage = lastPage;
+
+            this.changeDetectorRef.markForCheck();
         });
+    }
+
+    @HostListener('window:scroll', [])
+    scrollHandler() {
+        const d = document.documentElement;
+        if ((d.scrollTop + d.clientHeight) > (d.scrollHeight - d.clientHeight))
+            this.getNextPosts();
     }
 
     formatDate(date: Date | undefined): string {

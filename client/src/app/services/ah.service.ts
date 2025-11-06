@@ -7,8 +7,9 @@ import { Product, RawProduct } from './models/ah';
 })
 export class AhService {
     _productsMostBonus: Product[] = [];
+    _lastPage: number = 0;
     _lastGetProductsMostBonus: number | undefined;
-    _productsMostBonusPromise?: Promise<Product[]>;
+    _productsMostBonusPromise?: Promise<[Product[], number]>;
 
     public onProductsChanged: EventEmitter<Product[]> = new EventEmitter();
 
@@ -18,30 +19,49 @@ export class AhService {
 
     constructor(private httpClient: HttpClient) { }
 
-    public getPosts(): Promise<Product[]> {
-        if (!this._lastGetProductsMostBonus || (Date.now() - this._lastGetProductsMostBonus) > (5 * 60000)) { // 5 minute cache
-            this._productsMostBonus = [];
+    public reset() {
+        this._productsMostBonus = [];
+        this._lastPage = 0;
+        this._lastGetProductsMostBonus = undefined;
+        this._productsMostBonusPromise = undefined;
+    }
 
-            if (!this._productsMostBonusPromise) {
-                this._productsMostBonusPromise = new Promise((resolve, _reject) => {
-                    this.httpClient.get<RawProduct[]>('/api/ah/products/most_bonus').subscribe(rawPosts => {
-                        for (const rawPost of rawPosts) {
-                            const post = Product.fromRaw(rawPost);
-                            this._productsMostBonus.push(post);
-                        }
+    public getPosts(lastPage: number = 0): Promise<[Product[], number]> {
+        const productsMostBonusPromise = this._productsMostBonusPromise;
+        this._productsMostBonusPromise = (async () => {
+            if (productsMostBonusPromise)
+                await productsMostBonusPromise;
 
-                        this._lastGetProductsMostBonus = Date.now();
-                        this._productsMostBonusPromise = undefined;
+            if (lastPage <= 0)
+                lastPage = 1;
 
-                        resolve(this._productsMostBonus);
-                        this.onProductsChanged.emit(this._productsMostBonus);
+            if (this._lastGetProductsMostBonus && (Date.now() - this._lastGetProductsMostBonus) > (60 * 60000)) // 60 minute cache
+                this.reset();
+
+            const firstPage = this._lastPage;
+
+            const tasks = [];
+            for (let i = firstPage; i < lastPage; i++) {
+                const page = i;
+                tasks.push(new Promise<Product[]>((resolve, _reject) => {
+                    this.httpClient.get<RawProduct[]>(`/api/ah/products/most_bonus?page=${page}`).subscribe(rawPosts => {
+                        resolve(rawPosts.map(rawPost => Product.fromRaw(rawPost)));
                     });
-                });
+                }));
             }
 
-            return this._productsMostBonusPromise;
-        }
-        else
-            return Promise.resolve(this._productsMostBonus);
+            for (const products of await Promise.all<Product[]>(tasks)) {
+                this._productsMostBonus.push(...products);
+            }
+
+            this._lastPage = lastPage;
+            this._lastGetProductsMostBonus = Date.now();
+            this._productsMostBonusPromise = undefined;
+
+            this.onProductsChanged.emit(this._productsMostBonus);
+            return [this._productsMostBonus, lastPage];
+        })();
+
+        return this._productsMostBonusPromise;
     }
 }

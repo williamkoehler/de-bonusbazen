@@ -24,12 +24,15 @@
 }
 
 html {
-    overflow: hidden;
+    // overflow: hidden;
 
     body {
         margin: 0;
         padding: 0;
+
     }
+
+    background-color: $background-color;
 }
 
 // Helper class to make elements unselectable
@@ -44,6 +47,7 @@ html {
         user-select: none;
     }
 }
+
 // // Input styling
 // input {
 //     display: block;
@@ -82,7 +86,7 @@ html {
 //     font-weight: 500;
 //     background-color: transparent;
 //     cursor: pointer;
-    
+
 //     transition: all 0.3s ease;
 
 //     &.primary {
