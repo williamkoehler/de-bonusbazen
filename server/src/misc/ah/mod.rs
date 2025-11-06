@@ -1,13 +1,81 @@
+use chrono::{DateTime, Utc};
 use futures_util::TryStreamExt;
-use sqlx::Row;
+use sqlx::{Executor, Row};
+use tracing::*;
 
-use super::error;
-use crate::databases::postgres::model;
+pub mod error;
+pub mod model;
 
-impl super::PostgresDb {
+const PAGE_SIZE: i64 = 50;
+
+#[derive(Clone)]
+pub struct AhManager {
+    postgres: sqlx::Pool<sqlx::postgres::Postgres>,
+    redis: redis::aio::MultiplexedConnection,
+}
+
+impl AhManager {
+    pub async fn new(
+        postgres: sqlx::Pool<sqlx::postgres::Postgres>,
+        redis: redis::aio::MultiplexedConnection,
+    ) -> error::ResultNew<Self> {
+        let ah_manager = Self { postgres, redis };
+
+        // Initialize tables
+        {
+            ah_manager.postgres
+                .execute(sqlx::query("CREATE TABLE IF NOT EXISTS ah_products (id BIGINT PRIMARY KEY, ranking BIGINT, data JSONB NOT NULL)"))
+                .await
+                .map_err(|err|{
+                    error!("failed to create ah_products table: {}", err);
+                    error::ErrorNew::SqlxError { inner: err }
+                })?;
+
+            ah_manager.postgres
+                .execute(sqlx::query("CREATE TABLE IF NOT EXISTS ah_comments (id SERIAL PRIMARY KEY, product_id BIGINT REFERENCES ah_products(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, comment VARCHAR NOT NULL)"))
+                .await
+                .map_err(|err|{
+                    error!("failed to create ah_products table: {}", err);
+                    error::ErrorNew::SqlxError { inner: err }
+                })?;
+        }
+
+        Ok(ah_manager)
+    }
+
+    pub async fn last_refresh(&self) -> error::Result<Option<DateTime<Utc>>> {
+        let mut conn = self.redis.clone();
+        let timestamp: Option<String> = redis::cmd("GET")
+            .arg("ah:last_refresh")
+            .query_async(&mut conn)
+            .await
+            .map_err(|err| error::Error::RedisError { inner: err })?;
+
+        if let Some(timestamp) = timestamp {
+            Ok(Some(timestamp.parse().map_err(|_| {
+                error::Error::OperationFailed {
+                    msg: "parse date time",
+                }
+            })?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn set_last_refresh(&self, datetime: chrono::DateTime<Utc>) -> error::Result<()> {
+        let mut conn = self.redis.clone();
+        redis::cmd("SET")
+            .arg("ah:last_refresh")
+            .arg(datetime.to_rfc3339())
+            .exec_async(&mut conn)
+            .await
+            .map_err(|err| error::Error::RedisError { inner: err })?;
+        Ok(())
+    }
+
     pub async fn ah_product_count(&self) -> error::Result<usize> {
         let row = sqlx::query("SELECT count(*) as count FROM ah_products")
-            .fetch_one(&self.pool)
+            .fetch_one(&self.postgres)
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -21,16 +89,14 @@ impl super::PostgresDb {
     pub async fn ah_products(
         &self,
         page: usize,
-        size: usize,
     ) -> error::Result<Vec<model::AhProduct>> {
         let mut products = Vec::new();
 
-        let offset = (page * size) as i64;
-        let size = size as i64;
+        let offset = (page as i64) * PAGE_SIZE;
         let mut rows = sqlx::query("SELECT data FROM ah_products LIMIT $1 OFFSET $2")
-            .bind(&size)
+            .bind(PAGE_SIZE)
             .bind(&offset)
-            .fetch(&self.pool);
+            .fetch(&self.postgres);
         while let Some(row) = rows
             .try_next()
             .await
@@ -49,16 +115,14 @@ impl super::PostgresDb {
     pub async fn ah_products_most_bonus(
         &self,
         page: usize,
-        size: usize,
     ) -> error::Result<Vec<model::AhProduct>> {
         let mut products = Vec::new();
 
-        let offset = (page * size) as i64;
-        let size = size as i64;
+        let offset = (page as i64) * PAGE_SIZE;
         let mut rows = sqlx::query("SELECT data FROM ah_products WHERE ranking IS NOT NULL ORDER BY ranking DESC, id ASC LIMIT $1 OFFSET $2")
-            .bind(&size)
+            .bind(PAGE_SIZE)
             .bind(&offset)
-            .fetch(&self.pool);
+            .fetch(&self.postgres);
         while let Some(row) = rows
             .try_next()
             .await
@@ -79,7 +143,7 @@ impl super::PostgresDb {
         products: &mut impl Iterator<Item = model::AhProduct>,
     ) -> error::Result<()> {
         let mut transaction = self
-            .pool
+            .postgres
             .begin()
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?;
@@ -120,7 +184,7 @@ impl super::PostgresDb {
             .bind(&product_id)
             .bind(&user_id)
             .bind(&comment)
-            .execute(&self.pool)
+            .execute(&self.postgres)
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 
@@ -130,7 +194,7 @@ impl super::PostgresDb {
     pub async fn remove_ah_comment(&self, id: i32) -> error::Result<()> {
         let result = sqlx::query("DELETE FROM ah_comments WHERE id = $1")
             .bind(&id)
-            .execute(&self.pool)
+            .execute(&self.postgres)
             .await
             .map_err(|err| error::Error::SqlxError { inner: err })?;
 

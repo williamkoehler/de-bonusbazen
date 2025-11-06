@@ -5,12 +5,12 @@ use axum::{
     response::Response,
 };
 
-use crate::{ArcState, databases::postgres::model};
+use crate::{ArcState, users::model::UserRights};
 
 #[derive(Clone)]
 pub struct AuthExtension {
     pub id: i32,
-    pub rights: model::UserRights,
+    pub rights: UserRights,
 }
 
 pub async fn auth_middleware(
@@ -43,7 +43,7 @@ pub async fn auth_middleware(
         }
         None => AuthExtension {
             id: 0,
-            rights: model::UserRights::Unauthenticated,
+            rights: UserRights::Unauthenticated,
         },
     };
 

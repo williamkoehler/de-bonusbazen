@@ -2,6 +2,9 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ErrorNew {
+    #[error("sqlx error: {inner}")]
+    SqlxError { inner: sqlx::Error },
+
     #[error("error: {inner}")]
     Error {
         inner: Box<dyn std::error::Error + Send + Sync>,
@@ -11,13 +14,17 @@ pub type ResultNew<T> = std::result::Result<T, ErrorNew>;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("database error: {inner}")]
-    DatabaseError {
-        inner: crate::databases::postgres::error::Error,
-    },
+    #[error("sqlx error: {inner}")]
+    SqlxError { inner: sqlx::Error },
+
+    #[error("redis error: {inner}")]
+    RedisError { inner: redis::RedisError },
 
     #[error("invalid data: {msg}")]
     InvalidData { msg: &'static str },
+
+    #[error("operation failed: {msg}")]
+    OperationFailed { msg: &'static str },
 }
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -27,10 +34,8 @@ pub enum ErrorAddUser {
     #[error("internal error: {msg}")]
     InternalError { msg: String },
     
-    #[error("database error: {inner}")]
-    DatabaseError {
-        inner: crate::databases::postgres::error::ErrorAddUser,
-    },
+    #[error("sqlx error: {inner}")]
+    SqlxError { inner: sqlx::Error },
 
     #[error("invalid name: {name}")]
     InvalidName { name: String },

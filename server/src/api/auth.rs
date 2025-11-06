@@ -7,7 +7,7 @@ use lettre::message::Mailbox;
 use serde::*;
 use tracing::*;
 
-use crate::{databases::postgres::model, users::helper::JwtClaims};
+use crate::users::{helper::JwtClaims, model};
 
 #[derive(Debug, Serialize)]
 pub struct GetReCaptchaResponseBody {
@@ -203,7 +203,7 @@ pub async fn get_verify(
     };
 
     let verification = state
-        .postgres
+        .user_manager
         .has_verification(claims.id)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
@@ -234,7 +234,7 @@ pub async fn get_verify(
         })?;
 
     // Remove verification
-    if let Err(err) = state.postgres.remove_verification(claims.id).await {
+    if let Err(err) = state.user_manager.remove_verification(claims.id).await {
         error!(id = claims.id, "failed to remove verification: {}", err);
     }
 

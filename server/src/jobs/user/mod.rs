@@ -4,33 +4,27 @@ use lettre::{Address, message::Mailbox};
 use tracing::*;
 
 use crate::{
-    databases::{
-        postgres::{PostgresDb, model::User},
-        redis::RedisDb,
-    },
     services::email::EMailService,
     state::Config,
+    users::{UserManager, model::User},
 };
 
 #[derive(Clone)]
 pub struct UserJobs {
     config: Arc<Config>,
-    postgres: PostgresDb,
-    redis: RedisDb,
+    user_manager: UserManager,
     email_service: EMailService,
 }
 
 impl UserJobs {
     pub fn new(
         config: Arc<Config>,
-        postgres: PostgresDb,
-        redis: RedisDb,
+        user_manager: UserManager,
         email_service: EMailService,
     ) -> Self {
         Self {
             config,
-            postgres,
-            redis,
+            user_manager,
             email_service,
         }
     }
@@ -39,10 +33,10 @@ impl UserJobs {
         info!("handling user registrations...");
 
         // Get unauthenticated users
-        let users = self.postgres.users(false, false, true).await?;
+        let users = self.user_manager.users(false, false, true).await?;
 
         for user in users {
-            let last_timestamp = self.redis.user_registration_timestamp(user.id).await?;
+            let last_timestamp = self.user_manager.verification_timestamp(user.id).await?;
 
             let needs_email = match last_timestamp {
                 Some(timestamp) => {
@@ -111,7 +105,7 @@ impl UserJobs {
         let verification_url = format!("{}/api/register/{}", self.config.access_host, token);
 
         // Add verification
-        self.postgres
+        self.user_manager
             .add_verification(user.id)
             .await
             .map_err(|err| {
@@ -157,8 +151,8 @@ impl UserJobs {
         info!(id = user.id, "successfully handled user registration");
 
         if let Err(err) = self
-            .redis
-            .set_user_registration_timestamp(user.id, chrono::Utc::now())
+            .user_manager
+            .set_verification_timestamp(user.id, chrono::Utc::now())
             .await
         {
             error!("failed to set user registration timestamp: {}", err);

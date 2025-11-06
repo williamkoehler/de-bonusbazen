@@ -6,7 +6,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{ArcState, databases::postgres::model};
+use crate::{ArcState, posts::model, users::model::UserRights};
 
 #[derive(Debug, Deserialize)]
 struct PostPostRequestBody {
@@ -28,7 +28,7 @@ async fn get_posts(
 ) -> Result<Json<Vec<model::Post>>, (StatusCode, Json<super::ErrorBody>)> {
     let posts = state
         .post_manager
-        .posts(auth_ext.rights >= model::UserRights::Member)
+        .posts(auth_ext.rights >= UserRights::Member)
         .await
         .map_err(|_| super::ErrorReason::InternalError.into())?;
 
@@ -42,7 +42,7 @@ async fn get_post(
 ) -> Result<Json<model::Post>, (StatusCode, Json<super::ErrorBody>)> {
     let post = state
         .post_manager
-        .post(id, auth_ext.rights >= model::UserRights::Member)
+        .post(id, auth_ext.rights >= UserRights::Member)
         .await
         .map_err(|_| super::ErrorReason::InternalError.into())?;
 
@@ -54,13 +54,11 @@ async fn post_post(
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Json(request_body): Json<PostPostRequestBody>,
 ) -> Result<Json<model::Post>, (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= model::UserRights::Member {
-        let visibility = request_body
-            .visibility
-            .unwrap_or(model::PostVisibility::Draft);
+    if auth_ext.rights >= UserRights::Member {
+        let visibility = request_body.visibility.unwrap_or(model::PostVisibility::Draft);
 
         if visibility >= model::PostVisibility::Visible {
-            if !(auth_ext.rights >= model::UserRights::Maintainer) {
+            if !(auth_ext.rights >= UserRights::Maintainer) {
                 warn!("user with insufficient rights tried to create a visible post");
                 return Err(super::ErrorReason::Unauthorized.into());
             }
@@ -89,11 +87,11 @@ async fn patch_post(
     Path(id): Path<i32>,
     Json(request_body): Json<PatchPostRequestBody>,
 ) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= model::UserRights::Member {
+    if auth_ext.rights >= UserRights::Member {
         // Check user rights for visibility change
         let visibility = if let Some(visibility) = request_body.visibility {
             if visibility >= model::PostVisibility::Visible {
-                if !(auth_ext.rights >= model::UserRights::Maintainer) {
+                if !(auth_ext.rights >= UserRights::Maintainer) {
                     warn!("user with insufficient rights tried to create a visible post");
                     return Err(super::ErrorReason::Unauthorized.into());
                 }
@@ -125,7 +123,7 @@ async fn delete_post(
     Extension(auth_ext): Extension<super::middleware::auth::AuthExtension>,
     Path(id): Path<i32>,
 ) -> Result<(), (StatusCode, Json<super::ErrorBody>)> {
-    if auth_ext.rights >= model::UserRights::Maintainer {
+    if auth_ext.rights >= UserRights::Maintainer {
         state
             .post_manager
             .remove_post(id)

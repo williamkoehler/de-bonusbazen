@@ -5,8 +5,8 @@ use crate::*;
 pub type ArcState = Arc<State>;
 
 pub struct State {
-    pub postgres: databases::postgres::PostgresDb,
-    pub redis: databases::redis::RedisDb,
+    pub postgres: sqlx::Pool<sqlx::postgres::Postgres>,
+    pub redis: redis::aio::MultiplexedConnection,
 
     pub ah_service: services::ah::AhService,
     pub recaptcha_service: services::recaptcha::ReCaptchaService,
@@ -16,6 +16,7 @@ pub struct State {
 
     pub user_manager: users::UserManager,
     pub post_manager: posts::PostManager,
+    pub ah_manager: misc::ah::AhManager,
 
     pub config: Arc<Config>,
 }

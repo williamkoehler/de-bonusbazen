@@ -7,7 +7,7 @@ use axum::{
 use serde::*;
 use tracing::*;
 
-use crate::{ArcState, databases::postgres::model};
+use crate::{ArcState, users::model};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PostUserRequestBody {
@@ -39,7 +39,7 @@ async fn get_users(
 
     let users = state
         .user_manager
-        .users(true, include_normal)
+        .users(true, include_normal, false)
         .await
         .map_err(|_| super::ErrorReason::InternalError.into())?;
 

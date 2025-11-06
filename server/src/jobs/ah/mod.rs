@@ -1,24 +1,16 @@
-use crate::{
-    databases::{
-        postgres::{PostgresDb, model::AhProduct},
-        redis::RedisDb,
-    },
-    services::ah::AhService,
-};
+use crate::{misc::ah::AhManager, misc::ah::model::AhProduct, services::ah::AhService};
 use tracing::*;
 
 #[derive(Clone)]
 pub struct AhJobs {
-    postgres: PostgresDb,
-    redis: RedisDb,
-    ah_service: AhService,
+    pub ah_manager: AhManager,
+    pub ah_service: AhService,
 }
 
 impl AhJobs {
-    pub fn new(postgres: PostgresDb, redis: RedisDb, ah_service: AhService) -> Self {
+    pub fn new(ah_manager: AhManager, ah_service: AhService) -> Self {
         Self {
-            postgres,
-            redis,
+            ah_manager,
             ah_service,
         }
     }
@@ -53,7 +45,7 @@ impl AhJobs {
                     .map::<AhProduct, _>(|product| product.into())
                     .filter(|product| product.bonus);
 
-                self.postgres.set_ah_products(&mut raw_products).await?;
+                self.ah_manager.set_ah_products(&mut raw_products).await?;
 
                 page += 1;
             }
@@ -61,7 +53,7 @@ impl AhJobs {
 
         info!("successfully updated AH products");
 
-        if let Err(err) = self.redis.set_last_ah_refresh(chrono::Utc::now()).await {
+        if let Err(err) = self.ah_manager.set_last_refresh(chrono::Utc::now()).await {
             error!("failed to update AH refresh time: {}", err);
         }
 

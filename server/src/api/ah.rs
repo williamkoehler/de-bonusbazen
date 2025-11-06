@@ -11,25 +11,15 @@ use crate::ArcState;
 #[derive(Deserialize)]
 struct Pagination {
     page: Option<usize>,
-    size: Option<usize>,
 }
 
 async fn get_products(
     State(state): State<ArcState>,
     Query(pagination): Query<Pagination>,
-) -> Result<
-    Json<Vec<crate::databases::postgres::model::AhProduct>>,
-    (StatusCode, Json<super::ErrorBody>),
-> {
-    let (page, size) = if let (Some(page), Some(size)) = (pagination.page, pagination.size) {
-        (page, size)
-    } else {
-        (0, 100)
-    };
-
+) -> Result<Json<Vec<crate::misc::ah::model::AhProduct>>, (StatusCode, Json<super::ErrorBody>)> {
     let products = state
-        .postgres
-        .ah_products(page, size)
+        .ah_manager
+        .ah_products(pagination.page.unwrap_or_default())
         .await
         .map_err(|err| {
             error!("failed to get products: {}", err);
@@ -41,11 +31,11 @@ async fn get_products(
 
 async fn get_products_most_bonus(
     State(state): State<ArcState>,
-) -> Result<Json<Vec<crate::databases::postgres::model::AhProduct>>, (StatusCode, Json<super::ErrorBody>)> {
-    let (page, size) = None.unwrap_or((0, 100));
+    Query(pagination): Query<Pagination>,
+) -> Result<Json<Vec<crate::misc::ah::model::AhProduct>>, (StatusCode, Json<super::ErrorBody>)> {
     let products = state
-        .postgres
-        .ah_products_most_bonus(page, size)
+        .ah_manager
+        .ah_products_most_bonus(pagination.page.unwrap_or_default())
         .await
         .map_err(|err| {
             error!("failed to get products with most bonus: {}", err);

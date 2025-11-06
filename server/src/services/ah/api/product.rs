@@ -116,9 +116,9 @@ pub struct Product {
     pub virtual_bundle_items: Option<Vec<VirtualBundleItem>>,
 }
 
-impl Into<crate::databases::postgres::model::AhProduct> for Product {
-    fn into(self) -> crate::databases::postgres::model::AhProduct {
-        crate::databases::postgres::model::AhProduct {
+impl Into<crate::misc::ah::model::AhProduct> for Product {
+    fn into(self) -> crate::misc::ah::model::AhProduct {
+        crate::misc::ah::model::AhProduct {
             id: self.hq_id,
             name: self.title,
             image: self

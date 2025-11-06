@@ -12,10 +12,10 @@ pub use state::ArcState;
 
 use crate::services::recaptcha;
 
-mod databases;
 mod jobs;
 mod services;
 
+mod misc;
 mod posts;
 mod users;
 
@@ -84,22 +84,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         });
 
-    // Initialize server
-    let postgres = databases::postgres::PostgresDb::new(&config.postgres).await?;
-    let redis = databases::redis::RedisDb::new(&config.redis).await?;
+    // Initialize database connections
+    let (postgres, redis) = {
+        info!("connecting to postgres database...");
+
+        let postgres = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(config.postgres.pool_max.unwrap_or(5))
+            .connect(&config.postgres.url)
+            .await?;
+
+        info!("connecting to redis database...");
+
+        let client = redis::Client::open(config.redis.url.as_str())?;
+        let redis = client.get_multiplexed_tokio_connection().await?;
+
+        (postgres, redis)
+    };
 
     let ah_service = services::ah::AhService::new()?;
     let recaptcha_service = recaptcha::ReCaptchaService::new(&config.server.recaptcha)?;
     let email_service = services::email::EMailService::new(&config.server.email)?;
-    
-    let user_manager = users::UserManager::new(postgres.clone()).await?;
+
+    let user_manager = users::UserManager::new(postgres.clone(), redis.clone()).await?;
     let post_manager = posts::PostManager::new(postgres.clone()).await?;
+    let ah_manager = misc::ah::AhManager::new(postgres.clone(), redis.clone()).await?;
 
     let jobs = jobs::Jobs::new(
         &config.jobs.unwrap_or_default(),
         global_config.clone(),
-        postgres.clone(),
-        redis.clone(),
+        user_manager.clone(),
+        ah_manager.clone(),
         ah_service.clone(),
         email_service.clone(),
     )
@@ -121,6 +135,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Managers
         user_manager,
         post_manager,
+        ah_manager,
 
         // Config
         config: global_config,
