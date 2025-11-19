@@ -17,6 +17,7 @@ pub struct ServerConfig {
     pub jwt: ServerJwtConfig,
     pub recaptcha: ServerReCaptchaConfig,
     pub email: ServerEMailConfig,
+    pub jinja: ServerJinjaConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,6 +39,11 @@ pub struct ServerEMailConfig {
     pub use_starttls: Option<bool>,
     pub username: Option<String>,
     pub password: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ServerJinjaConfig {
+    pub path: String,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]

@@ -104,6 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ah_service = services::ah::AhService::new()?;
     let recaptcha_service = recaptcha::ReCaptchaService::new(&config.server.recaptcha)?;
     let email_service = services::email::EMailService::new(&config.server.email)?;
+    let jinja_service = services::jinja::JinjaService::new(&config.server.jinja);
 
     let user_manager = users::UserManager::new(postgres.clone(), redis.clone()).await?;
     let post_manager = posts::PostManager::new(postgres.clone()).await?;
@@ -116,6 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ah_manager.clone(),
         ah_service.clone(),
         email_service.clone(),
+        jinja_service.clone(),
     )
     .await?;
 
@@ -128,6 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ah_service,
         recaptcha_service,
         email_service,
+        jinja_service,
 
         // Jobs
         jobs,

@@ -86,10 +86,7 @@ impl AhManager {
         Ok(count as usize)
     }
 
-    pub async fn ah_products(
-        &self,
-        page: usize,
-    ) -> error::Result<Vec<model::AhProduct>> {
+    pub async fn ah_products(&self, page: usize) -> error::Result<Vec<model::AhProduct>> {
         let mut products = Vec::new();
 
         let offset = (page as i64) * PAGE_SIZE;

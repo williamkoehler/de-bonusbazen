@@ -11,6 +11,7 @@ pub struct State {
     pub ah_service: services::ah::AhService,
     pub recaptcha_service: services::recaptcha::ReCaptchaService,
     pub email_service: services::email::EMailService,
+    pub jinja_service: services::jinja::JinjaService,
 
     pub jobs: jobs::Jobs,
 

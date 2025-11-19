@@ -4,7 +4,11 @@ use tracing::*;
 
 use crate::{
     misc::ah::AhManager,
-    services::{ah::AhService, email::EMailService},
+    services::{
+        ah::AhService,
+        email::EMailService,
+        jinja::{self, JinjaService},
+    },
     state::Config,
     users::UserManager,
 };
@@ -28,14 +32,19 @@ impl Jobs {
         ah_manager: AhManager,
         ah_service: AhService,
         email_service: EMailService,
+        jinja_service: JinjaService,
     ) -> error::ResultNew<Self> {
         let job_scheduler = tokio_cron_scheduler::JobScheduler::new()
             .await
             .map_err(|err| error::ErrorNew::CronSchedulerError { inner: err })?;
 
         let ah_jobs = ah::AhJobs::new(ah_manager.clone(), ah_service.clone());
-        let user_jobs =
-            user::UserJobs::new(config.clone(), user_manager.clone(), email_service.clone());
+        let user_jobs = user::UserJobs::new(
+            config.clone(),
+            user_manager.clone(),
+            email_service.clone(),
+            jinja_service.clone(),
+        );
 
         // Initialize default jobs
         {

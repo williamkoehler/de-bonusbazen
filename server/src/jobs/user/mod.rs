@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use lettre::{Address, message::Mailbox};
 use tracing::*;
 
 use crate::{
-    services::email::EMailService,
+    services::{email::EMailService, jinja::JinjaService},
     state::Config,
     users::{UserManager, model::User},
 };
@@ -14,6 +14,7 @@ pub struct UserJobs {
     config: Arc<Config>,
     user_manager: UserManager,
     email_service: EMailService,
+    jinja_service: JinjaService,
 }
 
 impl UserJobs {
@@ -21,11 +22,13 @@ impl UserJobs {
         config: Arc<Config>,
         user_manager: UserManager,
         email_service: EMailService,
+        jinja_service: JinjaService,
     ) -> Self {
         Self {
             config,
             user_manager,
             email_service,
+            jinja_service,
         }
     }
 
@@ -121,27 +124,35 @@ impl UserJobs {
             verification_url
         );
 
+        let id = user.id.to_string();
+        let nickname = user.nickname.clone().unwrap_or_else(|| user.name.clone());
+
+        // Render email template
+        let body = {
+            let mut context: HashMap<&str, &str> = HashMap::new();
+
+            context.insert("id", &id);
+            context.insert("name", &user.name);
+            context.insert("nickname", &nickname);
+            context.insert("email", &email);
+            context.insert("token", &token);
+
+            self.jinja_service
+                .render_template("verification.email.txt", &context)?
+        };
+
         // Send register email
         let message = lettre::Message::builder()
-        .from(Mailbox::new(
-            Some("Register".to_string()),
-            lettre::Address::new("no-reply", "no-reply").unwrap(),
-        ))
-        .to(Mailbox::new(
-            Some(
-                user
-                    .nickname
-                    .clone()
-                    .unwrap_or_else(|| user.name.clone()),
-            ),
-            Address::try_from(email)?,
-        ))
-        .subject("Register your account")
-        .body(format!(
-            "Please register your account by visiting the following link: {}\n\nIf you did not register an account, please ignore this email.",
-            verification_url
-        ))
-        .unwrap();
+            .from(Mailbox::new(
+                Some("Register".to_string()),
+                lettre::Address::new("no-reply", "no-reply").unwrap(),
+            ))
+            .to(Mailbox::new(
+                Some(user.nickname.clone().unwrap_or_else(|| user.name.clone())),
+                Address::try_from(email)?,
+            ))
+            .subject("Verify your account")
+            .body(body)?;
 
         self.email_service.send(message).await.map_err(|err| {
             error!(id = user.id, "failed to send verification email: {}", err);
