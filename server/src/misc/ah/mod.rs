@@ -174,6 +174,15 @@ impl AhManager {
         Ok(())
     }
 
+    pub async fn remove_all_ah_products(&self) -> error::Result<()> {
+        sqlx::query("DELETE FROM ah_products")
+            .execute(&self.postgres)
+            .await
+            .map_err(|err| error::Error::SqlxError { inner: err })?;
+
+        Ok(())
+    }
+
     pub async fn add_ah_comment(
         &self,
         product_id: i64,

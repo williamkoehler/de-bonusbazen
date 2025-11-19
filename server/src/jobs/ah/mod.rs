@@ -21,6 +21,11 @@ impl AhJobs {
         let token = self.ah_service.authenticate().await?;
         let categories = self.ah_service.get_categories(&token).await?;
 
+        // Remove all old products
+        if let Err(err) = self.ah_manager.remove_all_ah_products().await {
+            error!("failed to remove old AH products: {}", err);
+        }
+
         for category in categories {
             match category.id {
                 20603 | 1057 | 18519 | 18521 | 1165 | 11717 | 1045 => continue, // Skip non-food categories
