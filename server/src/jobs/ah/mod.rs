@@ -47,8 +47,7 @@ impl AhJobs {
                 let mut raw_products = search_results
                     .products
                     .into_iter()
-                    .map::<AhProduct, _>(|product| product.into())
-                    .filter(|product| product.bonus);
+                    .map::<AhProduct, _>(|product| product.into());
 
                 self.ah_manager.set_ah_products(&mut raw_products).await?;
 
