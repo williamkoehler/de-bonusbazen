@@ -1,4 +1,4 @@
-use lettre::{SmtpTransport, Transport};
+use lettre::{SmtpTransport, Transport, transport::smtp::SmtpTransportBuilder};
 use tracing::*;
 
 pub mod error;
@@ -6,7 +6,7 @@ pub mod error;
 
 #[derive(Clone)]
 pub struct EMailService {
-    transport: SmtpTransport,
+    transport_builder: SmtpTransportBuilder,
 }
 
 impl EMailService {
@@ -32,15 +32,18 @@ impl EMailService {
             warn!("EMail service is configured without authentication credentials.");
         }
 
-        Ok(Self {
-            transport: transport_builder.build(),
-        })
+        Ok(Self { transport_builder })
     }
 
     pub async fn send(&self, email: lettre::Message) -> error::Result<()> {
-        self.transport
+        let transport = self.transport_builder.clone().build();
+
+        transport
             .send(&email)
             .map_err(|err| error::Error::LettreError { inner: err })?;
+
+        transport.shutdown();
+
         Ok(())
     }
 }
